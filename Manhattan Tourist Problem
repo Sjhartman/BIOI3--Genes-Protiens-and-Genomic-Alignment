@@ -1,0 +1,100 @@
+# DPChange(money, Coins): Utilize dynamic programming to find the smallest amount of coins required to reach total.
+# Input: int(money), list of int(Coins)
+# Output: The lowest amount of coins required to reach money
+
+# DPChange_Augment(money, Coins): Modified DPChange with (1) the array size will not exceed the value of the largest coin, and (2) a list of coins are returned instead of the number of coins required.
+# Input: int(money), list of int(Coins)
+# Output: The lowest amount of coins required to reach money
+
+# ManhattanTourist(File): finds the longest path from s(0,0) to s(n,m).
+# Input: File with n and m in line 1, the Down matrix in the following rows, each weight space separated, a line with a dash indicating end of Down matrix. Next line has the Right matrix in the same format as the Down matrix
+
+import math
+
+def DPChange(money, Coins):
+    MinNumCoins = {0:0}
+    for m in range(1,money+1):
+        MinNumCoins[m] = math.inf
+        for i in range(0,len(Coins)):
+            # print(Coins[i])
+            if m >= Coins[i]:
+                # print(True)
+                # print("Coin:",Coins[i], "m:", m)
+                # print(MinNumCoins[m - Coins[i]] + 1)
+                # print(MinNumCoins[m])
+                if MinNumCoins[m - Coins[i]] + 1 < MinNumCoins[m]:
+                    MinNumCoins[m] = MinNumCoins[m - Coins[i]] +1
+    return MinNumCoins
+
+def DPChange_Augment(money, Coins):
+    ### MinNumCoins dict was from original algorithm, keeps track of the min number of coins needed. MinNumCoins_Change dict keeps track of the actual coins
+    ### variable m is the maximum value that can be calculated. m is bounded by Max which is the smallest of money or largest coin
+    ### Coins are always put in decreasing order for this algorithm to work, as the dynamic program always considers the larger coins first.
+    MinNumCoins = {0:0}
+    MinNumCoins_Change = {0:[]}
+    if Coins[0] < money:
+        Max = Coins[0]
+    else:
+        Max = money
+    for m in range(1,Max+1):
+        # print("m =",m, MinNumCoins_Change)
+        MinNumCoins[m] = math.inf
+        MinNumCoins_Change[m] = []
+        for i in range(0,len(Coins)):
+            # print(Coins[i])
+            if m >= Coins[i]:
+                # print(True)
+                # print("Coin:",Coins[i], "m:", m)
+                # print(MinNumCoins[m - Coins[i]] + 1)
+                # print(MinNumCoins[m])
+                if MinNumCoins[m - Coins[i]] + 1 < MinNumCoins[m]:
+                    MinNumCoins[m] = MinNumCoins[m - Coins[i]] +1
+                    MinNumCoins_Change[m] = MinNumCoins_Change[m - Coins[i]] + [Coins[i]]
+    # print(MinNumCoins_Change)
+    return MinNumCoins_Change[m]
+
+def ManhattanTourist(File):
+    #Interpret File
+    File = [x.strip("\n") for x in File]
+    n , m = int(File[0].split()[0])+1, int(File[0].split()[1])+1
+    Down = [list(map(int, x.split())) for x in File[1:n]]
+    Right = [list(map(int, x.split())) for x in File[n+1:n+1+n]]
+    # print(n, m)
+    # print(File)
+    # print("Down:",Down)
+    # print("Right:",Right)
+
+    #Initialize:
+    memoize = {'0 0': 0}
+
+    #Main Loop:
+    for i in range(1,n):
+        Coordinate , Compare = '{} 0'.format(i), '{} 0'.format(i-1)
+        memoize[Coordinate] = memoize[Compare] + Down[i-1][0]
+    for j in range(1,m):
+        Coordinate , Compare = '0 {}'.format(j), '0 {}'.format(j-1)
+        memoize[Coordinate] = memoize[Compare] + Right[0][j-1]
+    for i in range(1,n):
+        for j in range(1,m):
+            Coordinate = "{} {}".format(i,j)
+            TopCompare = '{} {}'.format(i-1, j)
+            LeftCompare = '{} {}'.format(i, j-1)
+            # print('Coordnate:', Coordinate)
+            # print("TopCompare:", TopCompare, "TopCompareValue:", memoize[TopCompare], 'vector:', Down[i-1][j])
+            # print("LefCompare:", LeftCompare, "LefCompareValue:", memoize[LeftCompare], 'vector:', Right[i][j-1])
+            # print('\n')
+            try: memoize[Coordinate] = max(memoize[TopCompare] + Down[i-1][j], memoize[LeftCompare] + Right[i][j-1])
+            except IndexError:
+                print(i, j)
+                print('memoize:',memoize)
+    return memoize[Coordinate]
+
+#Normal Test
+File = open(r'C:\Users\sjhar\OneDrive\Documents\Educational\Coursera\BIOI 3\dataset_261_10.txt', 'r')
+
+#Default Test
+# File = open(r'C:\Users\sjhar\OneDrive\Documents\Educational\Coursera\BIOI 3\inputs\test4.txt', 'r')
+
+print(ManhattanTourist(File))
+
+
