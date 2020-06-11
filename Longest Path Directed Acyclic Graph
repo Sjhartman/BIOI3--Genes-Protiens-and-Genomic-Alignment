@@ -1,0 +1,41 @@
+# File input with upstream node of interest in line 1 and downstream node of interest in line 2
+# See "Longest Path Test case" file for sample inputs and outputs
+
+def DAGLongestPath_2(file):
+    #Interpret file
+    file = [x.strip('\n') for x in file]
+    Start, End, NumEdges = file[0], file[1], len(file) -2
+    EdgeList, Max, LongestPathDict = [], 0, {Start: [0, [Start]]}
+    for edge in file[2:]:
+        EdgeList.append(re.split('->|:', edge))
+    EdgeList.sort()
+    # print(EdgeList)
+    
+    #Main loop
+    for edge in EdgeList:
+        # if edge[1] == End:
+            # print('END PIECE FOUND')
+            # print(edge)
+            # print(LongestPathDict)
+        if edge[0] in LongestPathDict:
+            if edge[1] not in LongestPathDict:
+                Path = LongestPathDict[edge[0]][1] + [edge[1]]
+                Weight = int(LongestPathDict[edge[0]][0])
+                LongestPathDict[edge[1]] = [int(edge[2]) + Weight, Path]
+                print("Norm addition:", LongestPathDict[edge[1]], 'edge:', edge)
+            else:
+                # print("Match of", edge[0])
+                Weight = int(edge[2]) + LongestPathDict[edge[0]][0]
+                # print("New weight =", Weight, "Current weigh:",LongestPathDict[edge[1]])
+                if Weight > LongestPathDict[edge[1]][0]:
+                    print('Heavier weight discovered for node', edge[1], 'from', LongestPathDict[edge[1]], 'to', [Weight, LongestPathDict[edge[0]][1] + [edge[1]]])
+                    LongestPathDict[edge[1]] = [Weight, LongestPathDict[edge[0]][1] + [edge[1]]]
+            if LongestPathDict[edge[1]][1][0] == Start and LongestPathDict[edge[1]][1][-1] == End:
+                print("Winner winner", LongestPathDict[edge[1]])
+                Final = LongestPathDict[edge[1]]
+    print(Final[0])
+    print('->'.join(Final[1]))
+    return
+
+File = open(r'C:\Users\sjhar\OneDrive\Documents\Educational\Coursera\BIOI 3\Wk 1 Final Prob\inputs\dataset_245_7 (4).txt', 'r')
+print(DAGLongestPath_2(File))
