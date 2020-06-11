@@ -1,0 +1,130 @@
+# Intial lines load the penalty matrix
+
+# CallPenalty(x, y), input two AA single character values to obtain penalty score
+
+# def LCSBackTrack(v, w): Reads through vector v and w, and generates a longest path map of alignments based upon the Blosum62 scoring system
+# input: v and w strings
+# output: backtrack dictionary
+
+# def OutputLCS_Top(backtrack, v, i, j): Uses the backtrack dictionary to generate the string of v for the alignment
+# input: backtrack dict, v, length of v and length of w
+# output: alignment string for v
+
+# def OutputLCS_Bottom(backtrack, w, i, j): Uses the backtrack dictionary to generate the string of w for the alignment
+# input: backtrack dict, w, length of v and length of w
+# output: alignment string for w
+
+import numpy as np
+
+Blosum62 = list(open(r'C:\Users\sjhar\OneDrive\Documents\Educational\Coursera\BIOI 3\Wk 2 Penalized Alignments\BLOSUM62.txt', 'r'))
+Blosum62 = [x.split() for x in Blosum62]
+Blosum62_2, AA_Num = [], {}
+for row in Blosum62[1:]:
+    Blosum62_2.append(list(map(int, row[1:])))
+PenaltyMatrix = np.matrix(Blosum62_2)
+# print(PenaltyMatrix)
+for AA in range(len(Blosum62[0])):
+    AA_Num[Blosum62[0][AA]] = AA
+
+def CallPenalty(x, y):
+    try: PenaltyMatrix.item(AA_Num[x], AA_Num[y])
+    except KeyError:
+        print(x, y)
+    return PenaltyMatrix.item(AA_Num[x], AA_Num[y])
+
+def LCSBackTrack(v, w):
+    #Intitalize memoize boundaries
+    IndelPenalty = 5
+    # print(v, w)
+    VL, WL, memoize, backtrack = len(v), len(w), {}, {}
+    for i in range(VL+1):
+        # print('i =', i)
+        memoize['{} 0'.format(i)] = -(IndelPenalty*(i))
+        backtrack['{} 0'.format(i)] = 'down'
+    for j in range(WL+1):
+        # print('j =', j)
+        memoize['0 {}'.format(j)] = -(IndelPenalty*(j))
+        backtrack['0 {}'.format(j)] = 'left'
+    memoize['0 0'] = 0
+    backtrack['0 0'.format(i)] = 'NONE'
+    # print('Mapping memoize boundaries:',memoize)
+
+    # Matching Loop
+    for i in range(1,VL+1):
+        for j in range(1,WL+1):
+            match = 0
+            if v[i-1] == w[j-1]:
+                # match += 1
+                match = CallPenalty(v[i - 1], w[j - 1])
+            else:
+                match = CallPenalty(v[i - 1], w[j - 1])
+                # match += -10
+            #Make Comparison Vertices:
+            Top = '{} {}'.format(i-1, j)
+            Left = '{} {}'.format(i, j-1)
+            Diagonal = '{} {}'.format(i-1, j-1)
+            Final = '{} {}'.format(i, j)
+            memoize[Final] = max(memoize[Top] - IndelPenalty, memoize[Left] - IndelPenalty, memoize[Diagonal] + match)
+            if i == VL and j == WL:
+                print(memoize[Final])
+            # print("Final =", Final)
+            # print(memoize[Top], memoize[Left], memoize[Diagonal])
+            # print(memoize)
+            # Generate the path of backtrack
+            if memoize[Final] == memoize[Top] - IndelPenalty:
+                backtrack[Final] = 'down'
+            elif memoize[Final] == memoize[Left] - IndelPenalty:
+                backtrack[Final] = 'left'
+            elif memoize[Final] == memoize[Diagonal] + 1:
+                backtrack[Final] = 'diagonal'
+            elif memoize[Final] == memoize[Diagonal] + match:
+                backtrack[Final] = 'diagonal'
+            # weird shit going on once backtrack is fixed, adjust the diagonal label to just 'diagonal'
+            else:
+                print("No match for:", Final, memoize[Final])
+                print(memoize)
+    # print('Final Memoize:',memoize)
+    # print('Backtrack:', backtrack)
+    return backtrack
+
+# print(LCSBackTrack("G", "ACATACGATG"))
+
+
+def OutputLCS_Top(backtrack, v, i, j):
+    # print(backtrack, v, i, j)
+    if i == 0  and j == 0:
+        return ''
+    Coordinate = '{} {}'.format(i, j)
+    if backtrack[Coordinate] == 'down':
+        # print("DOWN")
+        return OutputLCS_Top(backtrack, v, i-1, j) + v[i-1]
+    elif backtrack[Coordinate] == 'left':
+        return OutputLCS_Top(backtrack, v, i, j-1) + "-"
+    elif backtrack[Coordinate] == 'diagonal':
+        return OutputLCS_Top(backtrack, v, i-1, j-1) + v[i-1]
+    else:
+        print("NO ANSWER")
+
+def OutputLCS_Bottom(backtrack, w, i, j):
+    Coordinate = '{} {}'.format(i, j)
+    if i == 0 and j == 0:
+        return ''
+    elif backtrack[Coordinate] == 'down':
+        return OutputLCS_Bottom(backtrack, w, i - 1, j) + "-"
+    elif backtrack[Coordinate] == 'left':
+        if i >= 0 and j > 0:
+            return OutputLCS_Bottom(backtrack, w, i, j - 1) + w[j - 1]
+    elif backtrack[Coordinate] == 'diagonal':
+        if i > 0 and j > 0:
+            return OutputLCS_Bottom(backtrack, w, i - 1, j - 1) + w[j - 1]
+    else:
+        print("NO ANSWER")
+
+def LCSfinal():
+    v = input()
+    w = input()
+    BackTracker = LCSBackTrack(v, w)
+    print(OutputLCS_Top(BackTracker,v, len(v), len(w)))
+    print(OutputLCS_Bottom(BackTracker,w, len(v), len(w)))
+    return
+print(LCSfinal())
