@@ -1,0 +1,266 @@
+# Intial lines load the penalty matrix
+
+# CallPenalty(x, y), input two AA single character values to obtain penalty score
+
+# def LCSBackTrack(v, w): Reads through vector v and w, and generates a longest path map of alignments based upon the Blosum62 scoring system
+# input: v and w strings
+# output: backtrack dictionary
+
+# def OutputLCS_Top(backtrack, v, i, j): Uses the backtrack dictionary to generate the string of v for the alignment
+# input: backtrack dict, v, length of v and length of w
+# output: alignment string for v
+
+# def OutputLCS_Bottom(backtrack, w, i, j): Uses the backtrack dictionary to generate the string of w for the alignment
+# input: backtrack dict, w, length of v and length of w
+# output: alignment string for w
+
+# def LCSBackTrack_Optimized(v, w): Use "Free rides" to create local alignments from generating new sources and sinks within the sequence alignment matrix
+# Inputs: alignment stings v and w. The strings must be single character amino acid sequences
+# Outputs: [backtrack (Directional Dictionary), FinalScore (Integer), Source (x, y tuple), Sink (x, y tuple), memoize (Score dictionary)]
+
+# OutputLCS_Top_Taxi(backtrack, v, i, j, memoize): Takes backtrack, memoize and v string from LCSBackTrack_Optimized to return top string of the sequence alignemnt.
+# Input: backtrack (Directional Dictionary), v (top string of alignment), i (length of v to sink), j (length of w to sink), memoize (Score dictionary)
+# Output: Top string of the sequence alignment
+
+# OutputLCS_Bottom_Taxi(backtrack, w, i, j, memoize): Takes backtrack, memoize and w string from LCSBackTrack_Optimized to return bottom string of the sequence alignemnt.
+# Input: backtrack (Directional Dictionary), w (bottom string of alignment), i (length of v to sink), j (length of w to sink), memoize (Score dictionary)
+# Output: Top string of the sequence alignment
+
+# FreeTaxiFromSource(): Generates sequences alignment of DNA strings v and w by combing the "LCSBackTrack_Optimized", "OutputLCS_Top_Taxi", and "OutputLCS_Bottom_Taxi" functions
+
+# HammingDistance(Seq1,Seq2): Calucates hamming distance between two strings of equal length
+
+
+import numpy as np
+import sys
+sys.setrecursionlimit(10000)
+
+PAM250 = list(open(r'C:\Users\sjhar\OneDrive\Documents\Educational\Coursera\BIOI 3\Wk 2 Penalized Alignments\PAM250.txt', 'r'))
+PAM250 = [x.split() for x in PAM250]
+PAM250_2, AA_Num = [], {}
+for row in PAM250[1:]:
+    PAM250_2.append(list(map(int, row[1:])))
+PenaltyMatrix = np.matrix(PAM250_2)
+# print(PenaltyMatrix)
+for AA in range(len(PAM250[0])):
+    AA_Num[PAM250[0][AA]] = AA
+
+def CallPenalty(x, y):
+    # try: PenaltyMatrix.item(AA_Num[x], AA_Num[y])
+    # except KeyError:
+    #     print(x, y)
+    return PenaltyMatrix.item(AA_Num[x], AA_Num[y])
+
+def LCSBackTrack(v, w):
+    #Intitalize memoize boundaries
+    # print(v, w)
+    VL, WL, memoize, backtrack = len(v), len(w), {}, {}
+    IndelPenalty = 1
+    for i in range(VL+1):
+        # print('i =', i)
+        memoize['{} 0'.format(i)] = -(IndelPenalty*(i))
+        backtrack['{} 0'.format(i)] = 'down'
+    for j in range(WL+1):
+        # print('j =', j)
+        memoize['0 {}'.format(j)] = -(IndelPenalty*(j))
+        backtrack['0 {}'.format(j)] = 'left'
+    memoize['0 0'] = 0
+    backtrack['0 0'.format(i)] = 'NONE'
+    # print('Mapping memoize boundaries:',memoize)
+
+    # Matching Loop
+    for i in range(1,VL+1):
+        for j in range(1,WL+1):
+            match = 0
+            if v[i-1] == w[j-1]:
+                match += 0
+                # match = CallPenalty(v[i - 1], w[j - 1])
+            else:
+                # match = CallPenalty(v[i - 1], w[j - 1])
+                match += -1
+            #Make Comparison Vertices:
+            Top = '{} {}'.format(i-1, j)
+            Left = '{} {}'.format(i, j-1)
+            Diagonal = '{} {}'.format(i-1, j-1)
+            Final = '{} {}'.format(i, j)
+            memoize[Final] = max(memoize[Top] - IndelPenalty, memoize[Left] - IndelPenalty, memoize[Diagonal] + match)
+            if i == VL and j == WL:
+                FinalScore = memoize[Final]
+            # print("Final =", Final)
+            # print(memoize[Top], memoize[Left], memoize[Diagonal])
+            # print(memoize)
+            # Generate the path of backtrack
+            if memoize[Final] == memoize[Top] - IndelPenalty:
+                backtrack[Final] = 'down'
+            elif memoize[Final] == memoize[Left] - IndelPenalty:
+                backtrack[Final] = 'left'
+            elif memoize[Final] == memoize[Diagonal] + match:
+                backtrack[Final] = 'diagonal'
+            elif memoize[Final] == memoize[Diagonal] + match:
+                backtrack[Final] = 'diagonal'
+            # weird shit going on once backtrack is fixed, adjust the diagonal label to just 'diagonal'
+            else:
+                print("No match for:", Final, memoize[Final])
+                print(memoize)
+    print('Final Memoize:',memoize)
+    print('Backtrack:', backtrack)
+    return backtrack
+
+# print(LCSBackTrack("G", "ACATACGATG"))
+
+
+def OutputLCS_Top(backtrack, v, i, j):
+    print("Top:", v, i, j)
+    if i == 0 and j == 0:
+        return ''
+    Coordinate = '{} {}'.format(i, j)
+    try: print(backtrack[Coordinate])
+    except KeyError:
+        print(backtrack, v, i, j)
+    if backtrack[Coordinate] == 'down':
+        return OutputLCS_Top(backtrack, v, i-1, j) + v[i-1]
+    elif backtrack[Coordinate] == 'left':
+        return OutputLCS_Top(backtrack, v, i, j-1) + "-"
+    elif backtrack[Coordinate] == 'diagonal':
+        return OutputLCS_Top(backtrack, v, i-1, j-1) + v[i-1]
+    else:
+        print("NO ANSWER")
+
+def OutputLCS_Bottom(backtrack, w, i, j):
+    # print("Bot:", w, i, j)
+    Coordinate = '{} {}'.format(i, j)
+    if i == 0 and j == 0:
+        return ''
+    elif backtrack[Coordinate] == 'down':
+        return OutputLCS_Bottom(backtrack, w, i - 1, j) + "-"
+    elif backtrack[Coordinate] == 'left':
+        if i >= 0 and j > 0:
+            return OutputLCS_Bottom(backtrack, w, i, j - 1) + w[j - 1]
+    elif backtrack[Coordinate] == 'diagonal':
+        if i > 0 and j > 0:
+            return OutputLCS_Bottom(backtrack, w, i - 1, j - 1) + w[j - 1]
+    else:
+        print("NO ANSWER")
+
+def LCSfinal():
+    v = input()
+    w = input()
+    BackTracker = LCSBackTrack(v, w)
+    Top = OutputLCS_Top(BackTracker,v, len(v), len(w))
+    print(Top)
+    Bottom = OutputLCS_Bottom(BackTracker,w, len(v), len(w))
+    print(Bottom)
+    return [Top, Bottom]
+
+def LCSBackTrack_Optimized(v, w):
+    #Intitalize memoize boundaries
+    IndelPenalty = 5
+    # print(v, w)
+    VL, WL, backtrack, LongestPath = len(v), len(w), {}, 0
+    # print('Mapping memoize boundaries:',memoize)
+    memoize, backtrack = {},{}
+    for i in range(VL+1):
+        # print('i =', i)
+        memoize[(i, 0)] = 0
+        backtrack[(i, 0)] = 'down'
+    for j in range(WL+1):
+        # print('j =', j)
+        memoize[(0, j)] = 0
+        backtrack[(0, j)] = 'left'
+    memoize[(0, 0)], Source = 0, (0, 0)
+    backtrack[(0, 0)] = 'NONE'
+
+    # Matching Loop
+    for i in range(1,VL+1):
+        for j in range(1,WL+1):
+            match = 0
+            if v[i-1] == w[j-1]:
+                # match += 1
+                match = CallPenalty(v[i - 1], w[j - 1])
+            else:
+                match = CallPenalty(v[i - 1], w[j - 1])
+                # match += -1
+            #Make Comparison Vertices:
+            Top = (i-1, j)
+            Left = (i, j-1)
+            Diagonal = (i-1, j-1)
+            Final = (i,j)
+            memoize[Final] = max(memoize[Top] - IndelPenalty, memoize[Left] - IndelPenalty, memoize[Diagonal] + match, 0)
+            if memoize[Final] == memoize[Top] - IndelPenalty:
+                backtrack[Final] = 'down'
+            elif memoize[Final] == memoize[Left] - IndelPenalty:
+                backtrack[Final] = 'left'
+            elif memoize[Final] == memoize[Diagonal] + match:
+                backtrack[Final] = 'diagonal'
+            if memoize[Final] > LongestPath:
+                LongestPath = memoize[Final]
+                # print('new longest path ending at:', Final, 'sore:', LongestPath)
+                Sink = Final
+    FinalScore = memoize[Sink]
+    backtrack[(0, 0)] = 'NONE'
+    # print('memoize:', memoize)
+    return [backtrack, FinalScore, Source, Sink, memoize]
+
+def OutputLCS_Top_Taxi(backtrack, v, i, j, memoize):
+    # print("Top:", v, i, j)
+    if i == 0  and j == 0:
+        return ''
+    if memoize[(i, j)] == 0:
+        return ''
+    Coordinate = (i,j)
+    # try: print(backtrack[Coordinate])
+    # except KeyError:
+    #     print('FAIL',backtrack, v, i, j, Coordinate)
+    if backtrack[Coordinate] == 'down':
+        return OutputLCS_Top_Taxi(backtrack, v, i-1, j, memoize) + v[i-1]
+    elif backtrack[Coordinate] == 'left':
+        return OutputLCS_Top_Taxi(backtrack, v, i, j-1, memoize) + "-"
+    elif backtrack[Coordinate] == 'diagonal':
+        return OutputLCS_Top_Taxi(backtrack, v, i-1, j-1, memoize) + v[i-1]
+    else:
+        print("NO ANSWER")
+
+def OutputLCS_Bottom_Taxi(backtrack, w, i, j, memoize):
+    # print("Bot:", w, i, j)
+    # print(backtrack)
+    Coordinate = (i, j)
+    if i == 0 and j == 0:
+        return ''
+    if memoize[(i, j)] == 0:
+        return ''
+    elif backtrack[Coordinate] == 'down':
+        return OutputLCS_Bottom_Taxi(backtrack, w, i - 1, j, memoize) + "-"
+    elif backtrack[Coordinate] == 'left':
+        return OutputLCS_Bottom_Taxi(backtrack, w, i, j-1, memoize) + w[j - 1]
+    elif backtrack[Coordinate] == 'diagonal':
+        return OutputLCS_Bottom_Taxi(backtrack, w, i-1, j-1, memoize) + w[j-1]
+    else:
+        print("NO ANSWER")
+
+def FreeTaxiFromSource():
+    #Initialize
+    v = input()
+    w = input()
+    VL, WL = len(v), len(w)
+
+    BackTracker = LCSBackTrack_Optimized(v, w)
+    backtrack, FinalScore, Source, Sink, memoize = BackTracker
+    print(backtrack, FinalScore, Source, Sink,'\n', memoize,'\n')
+    Top = OutputLCS_Top_Taxi(backtrack, v[0:Sink[0]], Sink[0], Sink[1], memoize)
+    print(FinalScore, '\n')
+    print(Top)
+    Bottom = OutputLCS_Bottom_Taxi(backtrack, w[0:Sink[1]], Sink[0], Sink[1], memoize)
+    print(Bottom)
+    # Maximum = list(map(str, Maximum))
+    return [Top, Bottom]
+
+# x = FreeTaxiFromSource()
+x = LCSfinal()
+
+def HammingDistance(Seq1,Seq2):
+    Total = 0
+    for i in range(len(Seq1)):
+        if Seq1[i] != Seq2[i]:
+            Total += 1
+    return Total
+print(HammingDistance(x[0], x[1]))
