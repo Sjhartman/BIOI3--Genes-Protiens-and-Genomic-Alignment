@@ -12,3 +12,5 @@ Series of python files used to complete the third course of Coursera's Bioinform
 5 Blosum62 Matrix: Matrix used for penalizing mismatches in sequence alignments, and match scores between matching residues
 
 6 Penalized Sequence Alignment: Uses the Blosum62 penalty matrix for determining the highest scoring paths within each sequence alignment. The input are two amino acid strings, with each amino acid reprented as a 1 letter code
+
+7 Local sequence alignment: Finds highest scoring local alignment by repositioning source and sink nodes to optimize longest path scores while generating the alignment matrix.
