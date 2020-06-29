@@ -1,0 +1,209 @@
+# LoadPenaltyMatrix(MatrixID): Loads and initializes penalty matrix for scoring matches and mismatches
+# input: MatrixID (May need to update file path in function to load within proper directory)
+# output: PenaltyMatrix, AA_Num
+
+# LCSBackTrack_GapPenalty(v, w, match, mismatch, indel, ExtGapPen): creates memoize and backtrack matrices. Creates top, middle and bottom memoize matrices for scoring gap penalities
+# input: amino acid strings v and w, score of match and mismatch (If using penalty matrix, set match and mismath to 'matrix', indel score, and extended gap penalty score
+# output: backtrack matrix
+
+# OutputLCS_Top(backtrack, v, i, j): Provides top string of the final alignment
+
+# OutputLCS_Bottom(backtrack, v, i, j): Provides bottomw string of the final alignment
+
+# LCSwExtGapPenalties(v, w, match, mismatch, indel, ExtGapPen): combines LCSBackTrack_GapPenalty, OutputLCS_Top and OutputLCS_Bottom functions to generate final alignment
+#input: amino acid strings v and w, score of match and mismatch (If using penalty matrix, set match and mismath to 'matrix', indel score, and extended gap penalty score
+# Output: Sequence alignments
+
+import numpy as np
+import sys
+import math
+import math
+sys.setrecursionlimit(10000)
+
+def LoadPenaltyMatrix(MatrixID):
+    URL = 'C:\\Users\\sjhar\\OneDrive\\Documents\\Educational\\Coursera\\BIOI 3\\Wk 2 Penalized Alignments\\{}.txt'.format(str(MatrixID))
+    Matrix = list(open(URL, 'r'))
+    Matrix = [x.split() for x in Matrix]
+    PenaltyMatrix, AA_Num = [], {}
+    for row in Matrix[1:]:
+        PenaltyMatrix.append(list(map(int, row[1:])))
+    PenaltyMatrix = np.matrix(PenaltyMatrix)
+    # print(PenaltyMatrix)
+    for AA in range(len(Matrix[0])):
+        AA_Num[Matrix[0][AA]] = AA
+    return PenaltyMatrix, AA_Num
+
+def LCSBackTrack(v, w, match, mismatch, indel):
+    #Intitalize memoize boundaries
+    # print(v, w)
+    VL, WL, memoize, backtrack = len(v), len(w), {}, {}
+    backtrack[(1, 0)] = 'down'
+    backtrack[(0, 1)] = 'left'
+    for i in range(1,VL+1):
+        memoize[(i, 0)] = -(indel * (i))
+        backtrack[(i, 0)] = 'down'
+    for j in range(1,WL+1):
+        memoize[(0, j)] = -(indel * (j))
+        backtrack[(0, j)] = 'left'
+    memoize[(0, 0)] = 0
+    backtrack[(0, 0)] = 'NONE'
+    # print('memoize intitialized:', memoize)
+
+    # print('Mapping memoize boundaries:',memoize)
+    # print("memoize_top  =", memoize_top)
+    # print("memoize  =", memoize)
+    # print("memoize_bot  =", memoize_bot)
+    # Matching Loop
+    if match == 'matrix' and mismatch == 'matrix':
+        LoadMatrix = LoadPenaltyMatrix('BLOSUM62')
+        PenaltyMatrix, AA_Num = LoadMatrix[0], LoadMatrix[1]
+
+    for i in range(1,VL+1):
+        for j in range(1,WL+1):
+            if match == 'matrix':
+                MidScore = PenaltyMatrix.item(AA_Num[v[i - 1]], AA_Num[w[j - 1]])
+            else:
+                if v[i-1] == w[j-1]:
+                    MidScore = match
+                else:
+                    MidScore = -mismatch
+            # print("Midscore =", MidScore)
+            #Make Comparison Vertices:
+            Top = (i-1, j)
+            Left = (i, j-1)
+            Diagonal = (i-1, j-1)
+            Final = (i,j)
+            # TopScore = max(memoize[Top] - indel, memoize_top[Top] - ExtGapPen)
+            # if TopScore == memoize[Top] - indel:
+            #     memoize_top[Final] = memoize[Top] - indel
+            # else:
+            #     memoize_top[Final] = memoize_top[Top] - ExtGapPen
+            # print('TopScore',TopScore)
+            # BotScore = max(memoize[Left] - indel, memoize_bot[Left] - ExtGapPen)
+            # # print('BotScore =', BotScore)
+            # if BotScore == memoize[Left] - indel:
+            #     memoize_bot[Final] = memoize[Left] - indel
+            # else:
+            #     memoize_bot[Final] = memoize_bot[Left] - ExtGapPen
+
+            # print(Final, TopScore, BotScore, memoize[Diagonal] + MidScore)
+            memoize[Final] = max(memoize[Top] - indel, memoize[Left] - indel, memoize[Diagonal] + MidScore)
+
+            if i == VL and j == WL:
+                FinalScore = memoize[Final]
+            # print(memoize)
+            # Generate the path of backtrack
+            if memoize[Final] == memoize[Top] - indel:
+                backtrack[Final] = 'down'
+            elif memoize[Final] == memoize[Left] - indel:
+                backtrack[Final] = 'left'
+            elif memoize[Final] == memoize[Diagonal] + MidScore:
+                backtrack[Final] = 'diagonal'
+            # weird shit going on once backtrack is fixed, adjust the diagonal label to just 'diagonal'
+            else:
+                print("No match for:", Final, memoize[Final])
+                print(memoize, '\n')
+    # print("memoize  =", memoize)
+    # print('Final Memoize:',memoize)
+    # print('Backtrack:', backtrack)
+    # print("Finalscore =", memoize[Final])
+    return [backtrack, memoize]
+
+# print(LCSBackTrack("CC", "TTTTT", 1, 5, 1))
+
+def OutputLCS_Top(backtrack, v, i, j):
+    # print("Top:", v, i, j)
+    if i == 0 and j == 0:
+        return ''
+    Coordinate = (i, j)
+    # print(Coordinate)
+    if backtrack[Coordinate] == 'down':
+        # print("Down", Coordinate)
+        return OutputLCS_Top(backtrack, v, i-1, j) + v[i-1]
+    elif backtrack[Coordinate] == 'left':
+        # print("Left", Coordinate)
+        return OutputLCS_Top(backtrack, v, i, j-1) + "-"
+    elif backtrack[Coordinate] == 'diagonal':
+        # print("Diagonal", Coordinate)
+        return OutputLCS_Top(backtrack, v, i-1, j-1) + v[i-1]
+    else:
+        print("NO ANSWER")
+
+def OutputLCS_Bottom(backtrack, w, i, j):
+    # print("Bot:", w, i, j)
+    Coordinate = (i, j)
+    if i == 0 and j == 0:
+        return ''
+    elif backtrack[Coordinate] == 'down':
+        return OutputLCS_Bottom(backtrack, w, i - 1, j) + "-"
+    elif backtrack[Coordinate] == 'left':
+        if i >= 0 and j > 0:
+            return OutputLCS_Bottom(backtrack, w, i, j - 1) + w[j - 1]
+    elif backtrack[Coordinate] == 'diagonal':
+        if i > 0 and j > 0:
+            return OutputLCS_Bottom(backtrack, w, i - 1, j - 1) + w[j - 1]
+    else:
+        print("NO ANSWER")
+
+def DivideAndConquerOptimizer(v, w, match, mismatch, indel):
+
+    ## Initialize variables
+    VL, WL = len(v), len(w)
+    MiddleNodes, MiddleScores = [], []
+
+    ## Conversion lists for mapping right hand graph
+    VConversionList = list(reversed(range(VL+1)))
+    # print("VConversionList:", VConversionList)
+    WConversionList = list(reversed(range(math.ceil(WL/2)+1)))
+    # print("WConversionList:", WConversionList)
+
+    ## Divide and conquer
+    wLeft = w[:(WL//2)]
+    wRight = w[(WL//2):]
+    # print(wLeft, wRight)
+    BackTrackerLeft = LCSBackTrack(v, wLeft, match, mismatch, indel)
+    # print('MemoizeLeft:', BackTrackerLeft[1])
+    # for i in range(VL):
+    #     print((i,WL//2), BackTrackerLeft[(i,WL//2+1)])
+    BackTrackerRight = LCSBackTrack(v[::-1], wRight[::-1], match, mismatch, indel)
+    # print('MemoizeRight:', BackTrackerRight)
+
+    ## Find longest path and associated middle node
+    Max = -math.inf
+    MiddleNode = ''
+    for i in range(VL+1):
+        # print(i)
+        # print(WL//2)
+        # print(BackTrackerLeft[1][(i, WL//2)])
+        # print(VConversionList[i])
+        # print(math.ceil(WL/2))
+        # print(BackTrackerRight[1][VConversionList[i], math.ceil(WL/2)])
+        # print("({}, {}) = {}, ({}, {}) = {}, Total Path length:".format(i, WL//2, BackTrackerLeft[1][(i, WL//2)], VConversionList[i], math.ceil(WL/2), BackTrackerRight[1][VConversionList[i], math.ceil(WL/2)]), BackTrackerLeft[1][(i, WL//2)] + BackTrackerRight[1][VConversionList[i], math.ceil(WL/2)])
+        PathLength = BackTrackerLeft[1][(i, WL//2)] + BackTrackerRight[1][VConversionList[i], math.ceil(WL/2)]
+        if PathLength > Max:
+            Max = PathLength
+            # print("New max:{}, row:{}".format(Max, i))
+            MiddleNode = (i, WL//2)
+            RightSideMiddleNode = (VConversionList[i], WL//2)
+
+    ## Use middle node and backtracker right to find middle edge (aka the edge budding off the middle node)
+    Coordinate = RightSideMiddleNode
+    if BackTrackerRight[0][Coordinate] == 'down':
+        # print("Down", Coordinate)
+        CoordinatingEdge = (Coordinate[0]-1, Coordinate[1])
+    elif BackTrackerRight[0][Coordinate] == 'left':
+        # print("Left", Coordinate)
+        CoordinatingEdge = (Coordinate[0], Coordinate[1]-1)
+    elif BackTrackerRight[0][Coordinate] == 'diagonal':
+        # print("Diagonal", Coordinate)
+        CoordinatingEdge = (Coordinate[0]-1, Coordinate[1]-1)
+    else:
+        print("NO ANSWER")
+    # print(Max, MiddleNode, RightSideMiddleNode, CoordinatingEdge)
+
+    CoordinatingEdgeTranslated = (VConversionList[CoordinatingEdge[0]], WConversionList[CoordinatingEdge[1]]+ WL//2)
+    print("MiddleNode: {} CoordinatingEdgeTranslated{}".format(MiddleNode, CoordinatingEdgeTranslated))
+    return
+
+# print(DivideAndConquerOptimizer(input(), input(), 2, 5, 3))
+print(DivideAndConquerOptimizer(input(), input(), 'matrix', 'matrix', 5))
