@@ -21,8 +21,8 @@ import math
 sys.setrecursionlimit(10000)
 
 def LoadPenaltyMatrix(MatrixID):
-    URL = 'C:\\Users\\sjhar\\OneDrive\\Documents\\Educational\\Coursera\\BIOI 3\\Wk 2 Penalized Alignments\\{}.txt'.format(str(MatrixID))
-    Matrix = list(open(URL, 'r'))
+    Location = 'C:\\Users\\sjhar\\OneDrive\\Documents\\Educational\\Coursera\\BIOI 3\\Wk 2 Penalized Alignments\\{}.txt'.format(str(MatrixID))
+    Matrix = list(open(Location, 'r'))
     Matrix = [x.split() for x in Matrix]
     PenaltyMatrix, AA_Num = [], {}
     for row in Matrix[1:]:
@@ -33,177 +33,280 @@ def LoadPenaltyMatrix(MatrixID):
         AA_Num[Matrix[0][AA]] = AA
     return PenaltyMatrix, AA_Num
 
-def LCSBackTrack(v, w, match, mismatch, indel):
-    #Intitalize memoize boundaries
-    # print(v, w)
-    VL, WL, memoize, backtrack = len(v), len(w), {}, {}
-    backtrack[(1, 0)] = 'down'
-    backtrack[(0, 1)] = 'left'
-    for i in range(1,VL+1):
-        memoize[(i, 0)] = -(indel * (i))
-        backtrack[(i, 0)] = 'down'
-    for j in range(1,WL+1):
-        memoize[(0, j)] = -(indel * (j))
-        backtrack[(0, j)] = 'left'
-    memoize[(0, 0)] = 0
-    backtrack[(0, 0)] = 'NONE'
-    # print('memoize intitialized:', memoize)
+def DiscoverAdjCol(v, wLetter, match, mismatch, indel, memoryColumn, PenaltyMatrix, AA_Num):
+    # print( match, mismatch, indel)
+    #Intitalize
+    discoveryColumn = [memoryColumn[0] - indel]
 
-    # print('Mapping memoize boundaries:',memoize)
-    # print("memoize_top  =", memoize_top)
-    # print("memoize  =", memoize)
-    # print("memoize_bot  =", memoize_bot)
-    # Matching Loop
-    if match == 'matrix' and mismatch == 'matrix':
-        LoadMatrix = LoadPenaltyMatrix('BLOSUM62')
-        PenaltyMatrix, AA_Num = LoadMatrix[0], LoadMatrix[1]
-
-    for i in range(1,VL+1):
-        for j in range(1,WL+1):
-            if match == 'matrix':
-                MidScore = PenaltyMatrix.item(AA_Num[v[i - 1]], AA_Num[w[j - 1]])
+    ## Make the algo run just once!!!
+    for i in range(1,len(v)+1):
+        if match == 'matrix':
+            MidScore = PenaltyMatrix.item(AA_Num[v[i - 1]], AA_Num[wLetter])
+        else:
+            if v[i-1] == wLetter:
+                MidScore = match
             else:
-                if v[i-1] == w[j-1]:
-                    MidScore = match
-                else:
-                    MidScore = -mismatch
-            # print("Midscore =", MidScore)
-            #Make Comparison Vertices:
-            Top = (i-1, j)
-            Left = (i, j-1)
-            Diagonal = (i-1, j-1)
-            Final = (i,j)
-            # TopScore = max(memoize[Top] - indel, memoize_top[Top] - ExtGapPen)
-            # if TopScore == memoize[Top] - indel:
-            #     memoize_top[Final] = memoize[Top] - indel
-            # else:
-            #     memoize_top[Final] = memoize_top[Top] - ExtGapPen
-            # print('TopScore',TopScore)
-            # BotScore = max(memoize[Left] - indel, memoize_bot[Left] - ExtGapPen)
-            # # print('BotScore =', BotScore)
-            # if BotScore == memoize[Left] - indel:
-            #     memoize_bot[Final] = memoize[Left] - indel
-            # else:
-            #     memoize_bot[Final] = memoize_bot[Left] - ExtGapPen
+                MidScore = -mismatch
+                # except TypeError:
+                #     print(v, wLetter, match, mismatch, indel, memoryColumn)
+        # print("Midscore =", MidScore)
 
-            # print(Final, TopScore, BotScore, memoize[Diagonal] + MidScore)
-            memoize[Final] = max(memoize[Top] - indel, memoize[Left] - indel, memoize[Diagonal] + MidScore)
+        #Make Comparison:
+        discoveryColumn.append(max(discoveryColumn[i-1] - indel, memoryColumn[i] - indel, memoryColumn[i-1] + MidScore))
+        # print('memory:   ',memoryColumn)
+        # print('discovery:',discoveryColumn)
 
-            if i == VL and j == WL:
-                FinalScore = memoize[Final]
-            # print(memoize)
-            # Generate the path of backtrack
-            if memoize[Final] == memoize[Top] - indel:
-                backtrack[Final] = 'down'
-            elif memoize[Final] == memoize[Left] - indel:
-                backtrack[Final] = 'left'
-            elif memoize[Final] == memoize[Diagonal] + MidScore:
-                backtrack[Final] = 'diagonal'
-            # weird shit going on once backtrack is fixed, adjust the diagonal label to just 'diagonal'
-            else:
-                print("No match for:", Final, memoize[Final])
-                print(memoize, '\n')
-    # print("memoize  =", memoize)
-    # print('Final Memoize:',memoize)
-    # print('Backtrack:', backtrack)
-    # print("Finalscore =", memoize[Final])
-    return [backtrack, memoize]
+    return discoveryColumn
 
-# print(LCSBackTrack("CC", "TTTTT", 1, 5, 1))
+# print(DiscoverAdjCol("EA", "E", 'match', 'match', 5, [0, -5, -10]))
 
-def OutputLCS_Top(backtrack, v, i, j):
-    # print("Top:", v, i, j)
-    if i == 0 and j == 0:
-        return ''
-    Coordinate = (i, j)
-    # print(Coordinate)
-    if backtrack[Coordinate] == 'down':
-        # print("Down", Coordinate)
-        return OutputLCS_Top(backtrack, v, i-1, j) + v[i-1]
-    elif backtrack[Coordinate] == 'left':
-        # print("Left", Coordinate)
-        return OutputLCS_Top(backtrack, v, i, j-1) + "-"
-    elif backtrack[Coordinate] == 'diagonal':
-        # print("Diagonal", Coordinate)
-        return OutputLCS_Top(backtrack, v, i-1, j-1) + v[i-1]
-    else:
-        print("NO ANSWER")
-
-def OutputLCS_Bottom(backtrack, w, i, j):
-    # print("Bot:", w, i, j)
-    Coordinate = (i, j)
-    if i == 0 and j == 0:
-        return ''
-    elif backtrack[Coordinate] == 'down':
-        return OutputLCS_Bottom(backtrack, w, i - 1, j) + "-"
-    elif backtrack[Coordinate] == 'left':
-        if i >= 0 and j > 0:
-            return OutputLCS_Bottom(backtrack, w, i, j - 1) + w[j - 1]
-    elif backtrack[Coordinate] == 'diagonal':
-        if i > 0 and j > 0:
-            return OutputLCS_Bottom(backtrack, w, i - 1, j - 1) + w[j - 1]
-    else:
-        print("NO ANSWER")
-
-def DivideAndConquerOptimizer(v, w, match, mismatch, indel):
+def MiddleEdge(v, w, match, mismatch, indel, top ='NA', bottom ='NA', left ='NA', right ='NA'):
+    TrueTop, TrueBottom, TrueLeft, TrueRight = top, bottom, left, right
+    ## Initialize if needed
+    if top == 'NA':
+        top = 0
+        TrueTop = 0
+    if bottom == 'NA':
+        bottom = len(v)
+        TrueBottom = len(v)
+    if left == 'NA':
+        left = 0
+        TrueLeft = 0
+    if right == 'NA':
+        right = len(w)
+        TrueRight = len(w)
+    middleNodeLeft = (right - left) // 2
+    middleNodeRight = math.ceil((right - left) / 2)
+    v = v[top:bottom]
+    w = w[left:right]
+    top, bottom, left, right = 0, len(v), 0, len(w)
+    # print(top, bottom, left, right)
+    # print('v = {}, w = {}, top = {}, bottom = {}, left = {}, right = {}'.format(v, w, top, bottom, left, right))
+    # print(middleNodeLeft, middleNodeRight)
 
     ## Initialize variables
     VL, WL = len(v), len(w)
     MiddleNodes, MiddleScores = [], []
-
     ## Conversion lists for mapping right hand graph
-    VConversionList = list(reversed(range(VL+1)))
-    # print("VConversionList:", VConversionList)
-    WConversionList = list(reversed(range(math.ceil(WL/2)+1)))
-    # print("WConversionList:", WConversionList)
+    VConversionList = list(reversed(range(bottom+1)))
 
-    ## Divide and conquer
-    wLeft = w[:(WL//2)]
-    wRight = w[(WL//2):]
-    # print(wLeft, wRight)
-    BackTrackerLeft = LCSBackTrack(v, wLeft, match, mismatch, indel)
-    # print('MemoizeLeft:', BackTrackerLeft[1])
-    # for i in range(VL):
-    #     print((i,WL//2), BackTrackerLeft[(i,WL//2+1)])
-    BackTrackerRight = LCSBackTrack(v[::-1], wRight[::-1], match, mismatch, indel)
-    # print('MemoizeRight:', BackTrackerRight)
+    ## Load the penalty matrix
+    LoadMatrix = LoadPenaltyMatrix('BLOSUM62')
+    PenaltyMatrix, AA_Num = LoadMatrix[0], LoadMatrix[1]
 
-    ## Find longest path and associated middle node
-    Max = -math.inf
-    MiddleNode = ''
-    for i in range(VL+1):
-        # print(i)
-        # print(WL//2)
-        # print(BackTrackerLeft[1][(i, WL//2)])
-        # print(VConversionList[i])
-        # print(math.ceil(WL/2))
-        # print(BackTrackerRight[1][VConversionList[i], math.ceil(WL/2)])
-        # print("({}, {}) = {}, ({}, {}) = {}, Total Path length:".format(i, WL//2, BackTrackerLeft[1][(i, WL//2)], VConversionList[i], math.ceil(WL/2), BackTrackerRight[1][VConversionList[i], math.ceil(WL/2)]), BackTrackerLeft[1][(i, WL//2)] + BackTrackerRight[1][VConversionList[i], math.ceil(WL/2)])
-        PathLength = BackTrackerLeft[1][(i, WL//2)] + BackTrackerRight[1][VConversionList[i], math.ceil(WL/2)]
-        if PathLength > Max:
-            Max = PathLength
-            # print("New max:{}, row:{}".format(Max, i))
-            MiddleNode = (i, WL//2)
-            RightSideMiddleNode = (VConversionList[i], WL//2)
+    ##~~~~~~~~~~~~~~~~~~~~~~~Find middle node~~~~~~~~~~~~~~~~~~~~~~~
+    ## Initialize memory column for the discovery column
+    memoryColumn = []
+    for i in range(top, bottom + 1):
+        memoryColumn.append(-(indel * (i)))
+    # print("BEGIN FWD MEMORY TROUBLESHOOT")
+    # print('1st memory col:', memoryColumn, 'middleNodeLeft:',middleNodeLeft)
 
-    ## Use middle node and backtracker right to find middle edge (aka the edge budding off the middle node)
-    Coordinate = RightSideMiddleNode
-    if BackTrackerRight[0][Coordinate] == 'down':
-        # print("Down", Coordinate)
-        CoordinatingEdge = (Coordinate[0]-1, Coordinate[1])
-    elif BackTrackerRight[0][Coordinate] == 'left':
-        # print("Left", Coordinate)
-        CoordinatingEdge = (Coordinate[0], Coordinate[1]-1)
-    elif BackTrackerRight[0][Coordinate] == 'diagonal':
-        # print("Diagonal", Coordinate)
-        CoordinatingEdge = (Coordinate[0]-1, Coordinate[1]-1)
+    ## Finds each column with linear memory from left to right of upper left rectangle
+    for i in range(middleNodeLeft):
+        # print(v[top:bottom], w[i], match, mismatch, indel, memoryColumn)
+        memoryColumn = DiscoverAdjCol(v[top:bottom], w[i], match, mismatch, indel, memoryColumn, PenaltyMatrix, AA_Num)
+    # print("Fwd memory:", memoryColumn)
+    FwdMemory1 = memoryColumn
+    # print('last adjacent col', FwdMemory1)
+
+    # if left == 0:
+    memoryColumn = []
+    for i in range(top, bottom + 1):
+        memoryColumn.append(-(indel * (i)))
+    # print('memory column for reverse:',memoryColumn)
+
+    vReverse, wReverse = v[::-1], w[::-1]
+    # print(w)
+    # print(list(range(right-1, middleNodeLeft-1,-1)))
+    # print(memoryColumn[::-1])
+    # print('Right =', right, "middlienodeleft =", middleNodeLeft)
+    for i in range(right - left - 1, middleNodeLeft - 1, -1):
+        memoryColumn = DiscoverAdjCol(vReverse, w[i], match, mismatch, indel, memoryColumn, PenaltyMatrix, AA_Num)
+        # print(memoryColumn)
+    # print("Bkd memory:", memoryColumn[::-1])
+    BkdMemory = memoryColumn
+
+    ## Calculate the longest path
+    TotalLengthDict, TotalLength = {}, []
+    # print('Fwd', FwdMemory1, 'bkd', BkdMemory)
+    for i in range(bottom-top+1):
+        Total = FwdMemory1[i] + BkdMemory[VConversionList[i]]
+        TotalLength.append(Total)
+        if Total not in TotalLengthDict:
+            TotalLengthDict[Total] = i
+        else:
+            if i < TotalLengthDict[Total]:
+                TotalLengthDict[Total] = i
+
+    MiddleV = TotalLengthDict[max(TotalLength)]
+    MiddleNode = (MiddleV, middleNodeLeft)
+    # print(MiddleNode)
+    if len(v) > 1:
+        DownWeight = TotalLength[MiddleV+1]
     else:
-        print("NO ANSWER")
-    # print(Max, MiddleNode, RightSideMiddleNode, CoordinatingEdge)
+        DownWeight = -math.inf
+    # print(TotalLength, MiddleNode, DownWeight)
 
-    CoordinatingEdgeTranslated = (VConversionList[CoordinatingEdge[0]], WConversionList[CoordinatingEdge[1]]+ WL//2)
-    print("MiddleNode: {} CoordinatingEdgeTranslated{}".format(MiddleNode, CoordinatingEdgeTranslated))
-    return
+    # Find Adj middle node:
+    if left == 0:
+        memoryColumn = []
+        for i in range(top, bottom + 1):
+            memoryColumn.append(-(indel * (i)))
 
-# print(DivideAndConquerOptimizer(input(), input(), 2, 5, 3))
-print(DivideAndConquerOptimizer(input(), input(), 'matrix', 'matrix', 5))
+    # print(w)
+    # print(list(range(left, middleNodeLeft+1)))
+    # print(memoryColumn)
+    for i in range(left, middleNodeLeft + 1):
+        memoryColumn = DiscoverAdjCol(v[top:bottom], w[i], match, mismatch, indel, memoryColumn, PenaltyMatrix, AA_Num)
+        # print(memoryColumn)
+    # print("Fwd memory:", memoryColumn)
+    FwdMemory2 = memoryColumn
+
+    if left == 0:
+        memoryColumn = []
+        for i in range(top, bottom + 1):
+            memoryColumn.append(-(indel * (i)))
+
+    vReverse, wReverse = v[::-1], w[::-1]
+    # print(w)
+    # print(list(range(right-1, middleNodeLeft,-1)))
+    # print(memoryColumn[::-1])
+    for i in range(right -left - 1, middleNodeLeft, -1):
+        memoryColumn = DiscoverAdjCol(v[top:bottom][::-1], w[i], match, mismatch, indel, memoryColumn, PenaltyMatrix, AA_Num)
+        # print(memoryColumn[::-1])
+    # print("Bkd memory:", memoryColumn[::-1])
+    BkdMemory = memoryColumn
+
+    TotalLengthDict, TotalLength = {}, []
+
+    if MiddleNode[0] == bottom:
+        AdjVerticalSearch = MiddleNode[0] + 1
+    else:
+        AdjVerticalSearch = MiddleNode[0] + 2
+    # print(list(range(MiddleNode[0],AdjVerticalSearch)))
+    for i in range(MiddleNode[0],AdjVerticalSearch):
+        Total = FwdMemory2[i] + BkdMemory[VConversionList[i]]
+        # print(FwdMemory2[i], "+",BkdMemory[VConversionList[i]],"=", Total)
+        if Total not in TotalLengthDict:
+            TotalLengthDict[Total] = i
+            TotalLength.append(Total)
+        else:
+            if i < TotalLengthDict[Total]:
+                TotalLengthDict[Total] = i
+                TotalLength.append(Total)
+    # print(TotalLength)
+    if len(TotalLength) > 1:
+        if TotalLength[0] > TotalLength[1]:
+            AdjMiddleNode = (MiddleNode[0], middleNodeLeft+1)
+            print("Horizontal")
+        else:
+            print("Diagonal")
+            AdjMiddleNode = (MiddleNode[0]+1, middleNodeLeft + 1)
+    else:
+        print('Total Length singular')
+        AdjMiddleNode = (MiddleNode[0], middleNodeLeft + 1)
+    # print(DownWeight, TotalLength)
+    if DownWeight > max(TotalLength):
+        print("Vertical")
+        AdjMiddleNode = (MiddleNode[0] + 1, middleNodeLeft)
+    # print(AdjMiddleNode)
+    # print(MiddleNode[0], MiddleNode[1], AdjMiddleNode[0], AdjMiddleNode[1], type(MiddleNode[0]), type(MiddleNode[1]), type(AdjMiddleNode[0]), type(AdjMiddleNode[1]))
+    MiddleNode = (MiddleNode[0] + TrueTop, MiddleNode[1] + TrueLeft)
+    AdjMiddleNode = (AdjMiddleNode[0] + TrueTop, AdjMiddleNode[1] + TrueLeft)
+    return MiddleNode, AdjMiddleNode
+
+# print(MiddleEdge('PLEASANTLY', 'MEASNLY', 'matrix', 'matrix', 5))
+# print(MiddleEdge('CC', 'TTTT', 1, 5, 1))
+# # (0, 2) (0, 3)
+# print(MiddleEdge('AT', 'GAT', 1, 1, 2))
+# # (0, 1) (1, 2)
+# print(MiddleEdge('TTCTT', 'TTTT', 1, 1, 1))
+# # (2, 2) (3, 2)
+# print(MiddleEdge('G', 'GAACCC', 1, 5, 1))
+# # (1, 3) (1, 4)
+# print(MiddleEdge('CAT', 'ACAGT', 2, 3, 1))
+# # (1, 2) (2, 3)
+# print(MiddleEdge('AATCCC', 'T', 2, 5, 3))
+# (0, 0) (1, 0)
+# print(MiddleEdge('ACDEACDE', 'ACDEACDE', 2, 5, 3))
+# print(MiddleEdge('ACDEACDE', 'ACDEACDE', 2, 5, 3, 0, 2, 0, 2))
+
+def LinearSpaceAlignment(v, w, match, mismatch, indel, top = 'NA', bottom = 'NA', left = 'NA', right = 'NA'):
+    # print(v, w)
+    ## Initialize if needed
+    if top == 'NA':
+        top = 0
+    if bottom == 'NA':
+        bottom = len(v)
+    if left == 'NA':
+        left = 0
+    if right == 'NA':
+        right = len(w)
+
+    if left == right:
+        print('LEFT = RIGHT')
+        return "Vertical Moves"
+    if top == bottom:
+        print("TOP = BOTTOM")
+        return "Horizontal Moves"
+    # print(top, bottom, left, right)
+
+    middle = (left + right)//2
+    midEdge = MiddleEdge(v, w, match, mismatch, indel, top, bottom, left, right)
+    midNode = midEdge[0][0]
+
+    ## Find middle edge of top left rectangle
+    # print(top, midNode, left, middle)
+    LinearSpaceAlignment(v, w, match, mismatch, indel, top, midNode, left, middle)
+    print('midEdge: ', midEdge, top, bottom, left, right)
+
+    ## Find dimensions of lower right rectangle based on middle edge direction
+    # print(midEdge)
+    midEdgeDirection = None
+    if midEdge[1][1] - midEdge[0][1] == 1:
+        middle += 1
+        midEdgeDirection = 'H'
+    if midEdge[1][0] - midEdge[0][0] == 1:
+        midNode += 1
+        if midEdgeDirection == 'H':
+            midEdgeDirection = 'D'
+        else:
+            midEdgeDirection = 'V'
+    # return midEdgeDirection
+    print('midEdgeDirection:', midEdgeDirection, 'From:', midEdge)
+    LinearSpaceAlignment(v, w, match, mismatch, indel, midNode, bottom, middle, right)
+
+
+# print(MiddleEdge('PLEASANTLY', 'MEASNLY', 'matrix','matrix',5, 3, 4, 2, 3))
+# print(MiddleEdge('PLEASANTLY', 'MEASNLY', 'matrix','matrix',5,))
+print(LinearSpaceAlignment('PLEASANTLY', 'MEASNLY', 'matrix','matrix',5))
+
+Location = 'C:\\Users\\sjhar\\OneDrive\\Documents\\Educational\\Coursera\\BIOI 3\\Wk 2 LinearSpaceAlignment\\dataset_250_14 (1).txt'
+Matrix = list(open(Location, 'r'))
+Matrix = [x.strip() for x in Matrix]
+# print(Matrix)
+# print(MiddleEdge(Matrix[0], Matrix[1], 'matrix', 'matrix', 5))
+
+
+#Recursive Test
+
+def PathwayTest(Sequence):
+    if len(Sequence) < 1:
+        return Sequence
+    return PathwayTest(Sequence[:-1]) + Sequence[-1]
+
+# print(PathwayTest('apple'))
+
+
+
+# import random
+# def test(input_string):
+#     l = len(input_string)
+#     if l >= 10:
+#         return input_string
+#     input_string += random.choice('abcdefghijklmnopqrstuvwxyz'
+#                                   'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+#     return test(input_string)
+
+# print(test(''))
