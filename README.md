@@ -14,3 +14,5 @@ Series of python files used to complete the third course of Coursera's Bioinform
 6 Penalized Sequence Alignment: Uses the Blosum62 penalty matrix for determining the highest scoring paths within each sequence alignment. The input are two amino acid strings, with each amino acid reprented as a 1 letter code
 
 7 Local sequence alignment: Finds highest scoring local alignment by repositioning source and sink nodes to optimize longest path scores while generating the alignment matrix.
+
+8 Linearspace sequence alignments: Divide and conquer strategy for performing the global sequence alignment with linear memory in O(nm). The alignment matrix is recursively divided into smaller matrices until every middle edge can be concatenated to produce the longest path and generate a global sequence alignmnet.
