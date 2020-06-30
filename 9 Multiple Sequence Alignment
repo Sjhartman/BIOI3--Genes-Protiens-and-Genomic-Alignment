@@ -1,0 +1,193 @@
+# Abrreviation: Multiple Sequence Alignment (MSA)
+# MSABackTrack_Optimized(A, B, C): Generates the longest path in a 3 sequence alignment
+# input: A B and C amino acid sequences (Single letter codes)
+# output: backtrack dictionary
+
+# OutputMSA_Top(backtrack, A, i, j, k): Reads backtrack dictionary to generate top string of the multi-sequence alignment
+
+# OutputMSA_Mid(backtrack, B, i, j, k): Reads backtrack dictionary to generate middle string of the multi-sequence alignment
+
+# OutputMSA_Bot(backtrack, C, i, j, k): Reads backtrack dictionary to generate middle string of the multi-sequence alignment
+
+# MSAfinal(A, B, C): Takes sequences A B and C, and combines above functions to generate algignment
+
+
+import numpy as np
+import sys
+sys.setrecursionlimit(10000)
+
+def MSABackTrack_Optimized(A, B, C):
+    #Intitalize memoize boundaries
+    IndelPenalty = 0
+    # print(v, w)
+    AL, BL, CL, backtrack, LongestPath = len(A), len(B), len(C), {}, 0
+    # print('Mapping memoize boundaries:',memoize)
+    memoize, backtrack = {},{}
+
+    ##Initialize AB plane
+    for i in range(AL+1):
+        for j in range(BL + 1):
+            memoize[(i, j, 0)] = 0
+            backtrack[(i, j, 0)] = 'OIO'
+    ##Initialize AC plane
+    for i in range(AL + 1):
+        for k in range(CL + 1):
+            memoize[(i, 0, k)] = 0
+            backtrack[(i, 0, k)] = 'IOO'
+    ##Initialize BC plane
+    for j in range(BL + 1):
+        for k in range(CL + 1):
+            memoize[(0, j, k)] = 0
+            backtrack[(0, j, k)] = 'OOI'
+    for i in range(AL+1):
+        backtrack[(i,0,0)] = 'IOO'
+    for j in range(BL+1):
+        backtrack[(0,j,0)] = 'OIO'
+    for k in range(CL+1):
+        backtrack[(0,0,k)] = 'OOI'
+    # print(memoize)
+    # print(backtrack)
+
+    # Matching Loop
+    for i in range(1,AL+1):
+        for j in range(1,BL+1):
+            for k in range(1, CL+1):
+                match = 0
+                if A[i - 1] == B[j - 1] == C[k - 1]:
+                    # print(True)
+                    match += 1
+                #Make Comparison Vertices:
+                III = (i-1, j-1, k-1)
+                IIO = (i-1, j-1, k)
+                IOO = (i-1, j, k)
+                OIO = (i, j-1, k)
+                IOI = (i-1, j, k-1)
+                OII = (i, j-1, k-1)
+                OOI = (i, j, k-1)
+                # print(memoize[III])
+                # print(memoize[IIO])
+                # print(memoize[IOO])
+                # print(memoize[OIO])
+                # print(memoize[IOI])
+                # print(memoize[OII])
+                # print(memoize[OOI])
+                # Top = (i-1, j)
+                # Left = (i, j-1)
+                # Diagonal = (i-1, j-1)
+                Final = (i, j, k)
+                memoize[Final] = max(memoize[III] + match, memoize[IIO], memoize[IOO], memoize[OIO], memoize[IOI], memoize[OII], memoize[OOI])
+                # if i == 3 and j == 3 and k == 3:
+                #     print("testing 1 2 3...")
+                #     print('Final', Final)
+                #     print('memoize[Final]',memoize[Final])
+                #     print('memoize:', memoize)
+                if memoize[Final] == memoize[III] + match:
+                    backtrack[Final] = 'III'
+                elif memoize[Final] == memoize[IIO]:
+                    backtrack[Final] = 'IIO'
+                elif memoize[Final] == memoize[IOO]:
+                    backtrack[Final] = 'IOO'
+                elif memoize[Final] == memoize[OIO]:
+                    backtrack[Final] = 'OIO'
+                elif memoize[Final] == memoize[IOI]:
+                    backtrack[Final] = 'IOI'
+                elif memoize[Final] == memoize[OII]:
+                    backtrack[Final] = 'OII'
+                elif memoize[Final] == memoize[OOI]:
+                    backtrack[Final] = 'OOI'
+                else:
+                    print("unassaigned at", i,j,k)
+                if memoize[Final] > LongestPath:
+                    LongestPath = memoize[Final]
+                    # print('new longest path ending at:', Final, 'sore:', LongestPath)
+                Sink = Final
+    FinalScore = memoize[Sink]
+    # print('memoize:', memoize)
+    return [backtrack, FinalScore, Sink, memoize]
+
+def OutputMSA_Top(backtrack, A, i, j, k):
+    # print("Top:", v, i, j)
+    # print('backtrack', backtrack)
+    if i == 0 and j == 0 and k == 0:
+        return ''
+    Coordinate = (i, j, k)
+    # print(Coordinate)
+    if backtrack[Coordinate] == 'III':
+        return OutputMSA_Top(backtrack, A, i - 1, j-1, k-1) + A[i - 1]
+    elif backtrack[Coordinate] == 'IIO':
+        return OutputMSA_Top(backtrack, A, i - 1, j-1, k) + A[i - 1]
+    elif backtrack[Coordinate] == 'IOO':
+        return OutputMSA_Top(backtrack, A, i - 1, j, k) + A[i - 1]
+    elif backtrack[Coordinate] == 'OIO':
+        return OutputMSA_Top(backtrack, A, i, j-1, k) + '-'
+    elif backtrack[Coordinate] == 'IOI':
+        return OutputMSA_Top(backtrack, A, i - 1, j, k-1) + A[i - 1]
+    elif backtrack[Coordinate] == 'OII':
+        return OutputMSA_Top(backtrack, A, i, j-1, k-1) + '-'
+    elif backtrack[Coordinate] == 'OOI':
+        return OutputMSA_Top(backtrack, A, i, j, k-1) + '-'
+    else:
+        print("NO ANSWER")
+
+def OutputMSA_Mid(backtrack, B, i, j, k):
+    # print("Top:", v, i, j)
+    # print('backtrack', backtrack)
+    if i == 0 and j == 0 and k == 0:
+        return ''
+    Coordinate = (i, j, k)
+    # print(Coordinate)
+    if backtrack[Coordinate] == 'III':
+        return OutputMSA_Mid(backtrack, B, i - 1, j - 1, k - 1) + B[j - 1]
+    elif backtrack[Coordinate] == 'IIO':
+        return OutputMSA_Mid(backtrack, B, i - 1, j - 1, k) + B[j - 1]
+    elif backtrack[Coordinate] == 'IOO':
+        return OutputMSA_Mid(backtrack, B, i - 1, j, k) + '-'
+    elif backtrack[Coordinate] == 'OIO':
+        return OutputMSA_Mid(backtrack, B, i, j - 1, k) + B[j - 1]
+    elif backtrack[Coordinate] == 'IOI':
+        return OutputMSA_Mid(backtrack, B, i - 1, j, k - 1) + '-'
+    elif backtrack[Coordinate] == 'OII':
+        return OutputMSA_Mid(backtrack, B, i, j - 1, k - 1) + B[j - 1]
+    elif backtrack[Coordinate] == 'OOI':
+        return OutputMSA_Mid(backtrack, B, i, j, k - 1) + '-'
+    else:
+        print("NO ANSWER")
+
+def OutputMSA_Bot(backtrack, C, i, j, k):
+    # print("Top:", v, i, j)
+    # print('backtrack', backtrack)
+    if i == 0 and j == 0 and k == 0:
+        return ''
+    Coordinate = (i, j, k)
+    # print(Coordinate)
+    if backtrack[Coordinate] == 'III':
+        return OutputMSA_Bot(backtrack, C, i - 1, j - 1, k - 1) + C[k-1]
+    elif backtrack[Coordinate] == 'IIO':
+        return OutputMSA_Bot(backtrack, C, i - 1, j - 1, k) + '-'
+    elif backtrack[Coordinate] == 'IOO':
+        return OutputMSA_Bot(backtrack, C, i - 1, j, k) + '-'
+    elif backtrack[Coordinate] == 'OIO':
+        return OutputMSA_Bot(backtrack, C, i, j - 1, k) + '-'
+    elif backtrack[Coordinate] == 'IOI':
+        return OutputMSA_Bot(backtrack, C, i - 1, j, k - 1) + C[k-1]
+    elif backtrack[Coordinate] == 'OII':
+        return OutputMSA_Bot(backtrack, C, i, j - 1, k - 1) + C[k-1]
+    elif backtrack[Coordinate] == 'OOI':
+        return OutputMSA_Bot(backtrack, C, i, j, k - 1) + C[k-1]
+    else:
+        print("NO ANSWER")
+
+
+
+def MSAfinal(A, B, C):
+    BackTracker = MSABackTrack_Optimized(A, B, C)
+    print(BackTracker[1])
+    Top = OutputMSA_Top(BackTracker[0], A, len(A), len(B), len(C))
+    print(Top)
+    Mid = OutputMSA_Mid(BackTracker[0], B, len(A), len(B), len(C))
+    print(Mid)
+    Bottom = OutputMSA_Bot(BackTracker[0], C, len(A), len(B), len(C))
+    print(Bottom)
+
+# print(LCSfinal('ATATCCGA', 'ATCCGA', 'ATGTACTGA'))
+print(MSAfinal(input(), input(), input()))
