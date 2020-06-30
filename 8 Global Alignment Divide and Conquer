@@ -1,4 +1,5 @@
 # Concept: https://cw.fel.cvut.cz/b182/_media/courses/bin/linear-space-alignment.pdf
+# Abbreviation: Linear-space Sequence Alignment (LSA)
 
 # LoadPenaltyMatrix(MatrixID): Loads and initializes penalty matrix for scoring matches and mismatches
 # input: MatrixID (Update file path as needed)
