@@ -16,3 +16,5 @@ Series of python files used to complete the third course of Coursera's Bioinform
 7 Local sequence alignment: Finds highest scoring local alignment by repositioning source and sink nodes to optimize longest path scores while generating the alignment matrix.
 
 8 Linearspace sequence alignments: Divide and conquer strategy for performing the global sequence alignment with linear memory in O(nm). The alignment matrix is recursively divided into smaller matrices until every middle edge can be concatenated to produce the longest path and generate a global sequence alignmnet.
+
+9 Primitive multiple sequence alignment. Practices using a 3 dimensional path to map the longest path between 3 sequences. Uses dynamic programing and a backtrack dictionary to trace the path for each line of the alignment.
