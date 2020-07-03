@@ -1,0 +1,89 @@
+# Overview: Series of functions to count the number of transposes required to arrive from Genome1 to Genome2 using a greedy algorithm, and additional functions to count the number of breakpoints in a given sequence.
+
+# ReverseSigns(Sequence):
+# Input: Sequence (Example: ['+3', '-2'])
+# Output: new list with signs reversed
+
+# GreedySorting(file): With a sequence of length n, rotate subsequences from i to n to generate an ordered list, and reverse signs when necessary.
+# input: sequence (Example: ['+3', '-2'])
+# output: each sequence generated from each iteration until the final positive ordered list is generated
+
+# NumBreakPoints(file): counts the breakpoints from subtracting adjacencies from number of nodes. An adjacency can be counted as two consecutive positive numbers increasing or two consecutive negative numbers decreasing.
+# input: sequence (Example: ['+3', '-2'])
+# output: number of breakpoints
+
+
+
+def ReverseSigns(Sequence):
+    for i in range(len(Sequence)):
+        if Sequence[i][0] == '+':
+            Sequence[i] = '-{}'.format(Sequence[i][1:])
+        else:
+            Sequence[i] = '+{}'.format(Sequence[i][1:])
+    return Sequence
+# print(ReverseSigns(['-3', '-2', '+5', '+1', '+4']))
+
+def GreedySorting(file):
+    Array_List = list(file)[0].split(' ')
+    # print(Array_List)
+    for i in range(len(Array_List)):
+        Array_List[i] = Array_List[i].strip()
+    StepTracker = []
+    for i in range(len(Array_List)):
+        # print("array =", Array_List)
+        Target = '-{}'.format(i+1)
+        if Target in Array_List:
+            TargetIndex = Array_List.index(Target)
+            # print('Target found= ', Target , 'at index', TargetIndex)
+            if TargetIndex < i:
+                PivotIndex, TargetIndex = TargetIndex, i
+            else:
+                PivotIndex = i
+            ReversalSection = list(Array_List[PivotIndex:TargetIndex+1])[::-1]
+            ReversalSection = ReverseSigns(ReversalSection)
+            # print('reversal section =', ReversalSection)
+            Array_List[PivotIndex:TargetIndex+1] = ReversalSection
+            StepTracker.append(Array_List[:])
+        Target = '+{}'.format(i + 1)
+        if Target in Array_List:
+            TargetIndex = Array_List.index(Target)
+            print('Target found= ', Target, 'at index', TargetIndex)
+            if TargetIndex > i:
+                PivotIndex = i
+                ReversalSection = list(Array_List[PivotIndex:TargetIndex + 1])[::-1]
+                ReversalSection = ReverseSigns(ReversalSection)
+                # print('reversal section =', ReversalSection)
+                Array_List[PivotIndex:TargetIndex + 1] = ReversalSection
+                StepTracker.append(Array_List[:])
+                if Array_List[PivotIndex][0] == '-':
+                    Array_List[PivotIndex] = '+{}'.format(Array_List[PivotIndex][1:])
+                    StepTracker.append(Array_List[:])
+    for i in StepTracker:
+        print(' '.join(i))
+    return len(StepTracker)
+
+def NumBreakPoints(file):
+    Array_List = ['+0']
+    Array_List += list(file)[0].split(' ')
+    TotalInteractions = len(Array_List)
+    Array_List.append('+{}'.format(TotalInteractions))
+    Adjacencies = 0
+    # print(Array_List)
+    for i in range(TotalInteractions):
+        #Match positives
+        if Array_List[i][0] == '+' and Array_List[i+1][0] == '+':
+            if int(Array_List[i][1:])+1 == int(Array_List[i+1][1:]):
+                # print(True, Array_List[i], Array_List[i+1])
+                Adjacencies += 1
+        #Match negatives
+        if Array_List[i][0] == '-' and Array_List[i+1][0] == '-':
+            if int(Array_List[i][1:]) == int(Array_List[i+1][1:])+1:
+                # print(True, Array_List[i], Array_List[i+1])
+                Adjacencies += 1
+    return TotalInteractions - Adjacencies
+
+
+
+f = open(r'C:\Users\sjhar\OneDrive\Documents\Educational\Coursera\BIOI 3\Wk 4 Greedy Sorting\GreedyQuiz3.txt', 'r')
+print(NumBreakPoints(f))
+# print(GreedySorting(f))
