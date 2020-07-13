@@ -18,3 +18,7 @@ Series of python files used to complete the third course of Coursera's Bioinform
 8 Linearspace sequence alignments: Divide and conquer strategy for performing the global sequence alignment with linear memory in O(nm). The alignment matrix is recursively divided into smaller matrices until every middle edge can be concatenated to produce the longest path and generate a global sequence alignmnet.
 
 9 Primitive multiple sequence alignment. Practices using a 3 dimensional path to map the longest path between 3 sequences. Uses dynamic programing and a backtrack dictionary to trace the path for each line of the alignment.
+ 
+10 Synteny Match with Greedy Algorithm: Attempts to align to genomes using a greedy algorithm that rearranges chromosomes based on their desired index and orientation. This model is not likely to be evolutionarily relevant as it does not produce the shortest path
+
+11 Breakpoint Graphs: Aligns two genomes to find 'breakpoints' or areas of synteny blocks that should be re-arranged to produce one genome from another. This strategy is more evolutionarily relevant than the greedy strategy, because it finds the shortest number of steps to transform one genome into another. However, there are multiple paths to transform the genomes into eachother that have the same amount of steps. 
