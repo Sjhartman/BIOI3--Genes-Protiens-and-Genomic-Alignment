@@ -1,0 +1,551 @@
+# ChromosomeToCycle(Chromosome): Convert synteny blocks into a graph mapping the chromosome arrangement.
+# Input: Sequence: (+1 -2 -3 +4) <- parentheses represent beginning and end of a chromosome.
+# Output: (1 2 4 3 6 5 7 8)
+
+# ChromosomeToCycle_IntBaseZero: ChromosomeToCycle with a zero-based output list
+
+# CycleToChromosome(Nodes): Inverse of ChromosomeToCycle
+
+# CycleToChromosome_ZeroBasedIntInput(Nodes) CycleToChromosome but input is a zero-based output list
+
+# ChromosomeToCycle_IntListInput{P): ChromosomeToCycle with chromosome as an list of integers
+
+# ChromosomeToCycle_IntListInput(Array_List): Same as ChromosomeToCycle except:
+# input: Sequence is list of integers
+# output: cycle in a list of integers starting with a zero-base index
+
+# ColoredEdges(P): generate colored edges associated with each cycle (A cycle represents a chromosome)
+# input: Chomosomes example: (+1 -2 -3)(+4 +5 -6)
+# output: [[1, 3], [2, 5], [4, 0], [7, 8], [9, 11], [10, 6]]  ## zero based index
+
+# ColoredEdges_PrettyOutput(P): Same as ColoredEdges, but output is one-based index and is in the proper format for the grader.
+
+# ColoredEdges_ZerobasedListInput(P): same as ColoredEdges, but input is a zero-based input list
+
+# GraphToGenome(GenomeGraph): Takes a list of colored edges and constructs a genome by 1st finding the cycles in the edges, and feeding the cycles into CycleToChromosome
+# input: colored edges in string format (ex: '(2, 4), (3, 6), (5, 1), (7, 9), (10, 12), (11, 8)')
+# output: genome of numeric (+/-) synteny blocks
+
+# GraphToGenome_InputIntList(GenomeGraph):
+
+# Two_BreakDistProb(P, Q): use genomes P and Q to find the number of breakpoints
+# input: genomes P and Q (Ex: (+1 +2 +3 +4 +5 +6), (+1 -3 -6 -5)(+2 -4))
+# output: 2-break distance of P and Q
+
+# Two_BreakDistProb_ZeroBasedIntListInp(CombinedEdges):
+# input: [[1, 2], [3, 5], [4, 6], [7, 0]] <- Genome cycle in sequential order
+
+# Two_BreakOnGenomeGraph(GenomeGraph, Nodes): Rearranges 2 edges in genome graph in the manner of: [1,2], [3,4] to become [1,3], [2,4]
+
+# Two_BreakOnGenomeGraph_PrettyOutput(GenomeGraph, Nodes): same as Two_BreakDistProb(Q, P), but has output on a one-based index and formatted for grader
+
+# Two_BreakOnGenome(P, Nodes): similar to Two_BreakOnGenomeGraph, but theh input is genome in string form
+
+# Two_BreakOnGenome_NodesZeroBasedInt(P, Nodes): see function above
+
+# Two_BreakOnGenomeGraph_EdgesAsZeroBasedLists(GenomeGraph, Nodes):
+
+# ShortestRearrangementScenario(P, Q): From genome P and Q find a path to get from P to Q with the minimum number of reaarrangements. This algo utilizes nearly all of the overhead alorithm types
+# input: P, Q <- P and Q are genomes in string form. e.g.: (+1 -2 -3 +4),(+1 +2 -4 -3)
+# Output: The evolution of P after each break until it becomes Q
+
+def ChromosomeToCycle(Chromosome):
+    Array_List = Chromosome.split(' ')
+    for i in range(len(Array_List)):
+        Array_List[i] = Array_List[i].strip('()\n')
+    Graph = []
+    chrLength = len(Array_List)
+    # print(chrLength, Array_List)
+    for i in range(chrLength):
+        Base = 2*int(Array_List[i])
+        if Base > 0:
+            Graph.append(Base - 2)
+            Graph.append(Base - 1)
+        else:
+            Graph.append(Base*-1 - 1)
+            Graph.append(Base*-1 - 2)
+    # Convert list to base 1
+    Graph2 = [str(x+1) for x in Graph]
+    Graph2 = '({})'.format(' '.join(Graph2))
+    return Graph2
+
+def ChromosomeToCycle_IntBaseZero(Chromosome):
+    # print('Chromosome',Chromosome)
+    Chromosome = Chromosome.replace(')(', ' ')
+    # print('Chromosome',Chromosome)
+    Array_List = Chromosome.split(' ')
+    for i in range(len(Array_List)):
+        Array_List[i] = Array_List[i].strip('()\n')
+    # print('Array_List', Array_List)
+    Graph = []
+    chrLength = len(Array_List)
+    # print(chrLength, Array_List)
+    for i in range(chrLength):
+        Base = 2*int(Array_List[i])
+        if Base > 0:
+            Graph.append(Base - 2)
+            Graph.append(Base - 1)
+        else:
+            Graph.append(Base*-1 - 1)
+            Graph.append(Base*-1 - 2)
+    return Graph
+
+def CycleToChromosome(Nodes):
+    Array_List, Chromosome = Nodes.split(' '), []
+    for i in range(len(Array_List)):
+        Array_List[i] = Array_List[i].strip('()\n')
+    Array_List = [int(x) for x in Array_List]
+    # print(Array_List)
+    for i in range(len(Array_List)//2):
+        if Array_List[2*i] < Array_List[2*i+1]:
+            Chromosome.append(Array_List[2*i]//2+1)
+        else:
+            Chromosome.append(-1*Array_List[i*2]//2)
+    Chromosome2 = '({})'.format(' '.join(['+{}'.format(x) if x > 0 else str(x) for x in Chromosome]))
+    return Chromosome2
+
+# print(CycleToChromosome('2 1 3 4 5 6 8 7 10 9 11 12 14 13 15 16 17 18 19 20 21 22 24 23 25 26 28 27 30 29 31 32 34 33 36 35 37 38'))
+
+def CycleToChromosome_ZeroBasedIntInput(Nodes):
+    Array_List, Chromosome = Nodes, []
+    # print(Array_List)
+    for i in range(len(Array_List)//2):
+        if Array_List[2*i] < Array_List[2*i+1]:
+            Chromosome.append(Array_List[2*i]//2+1)
+        else:
+            Chromosome.append(-1*(Array_List[i*2]//2+1))
+    Chromosome2 = '({})'.format(' '.join(['+{}'.format(x) if x > 0 else str(x) for x in Chromosome]))
+    return Chromosome2
+
+def CycleToChromosome_ZeroBasedIntInput_Fixed(Nodes):
+    Array_List, Chromosome = Nodes, []
+    for i in range(len(Array_List)//2):
+        if Array_List[2*i] < Array_List[2*i+1]:
+            Chromosome.append(Array_List[2*i+1]//2+1)
+        else:
+            Chromosome.append(-1*(Array_List[i*2]//2+1))
+    Chromosome2 = '({})'.format(' '.join(['+{}'.format(x) if x > 0 else str(x) for x in Chromosome]))
+    return Chromosome2
+
+# print(CycleToChromosome_ZeroBasedIntInput_Fixed([0, 1, 2, 3, 7, 6, 5, 4]))
+
+def ChromosomeToCycle_IntListInput(Array_List):
+    # print(Array_List)
+    Graph = []
+    chrLength = len(Array_List)
+    # print(chrLength, Array_List)
+    for i in range(chrLength):
+        Base = 2*int(Array_List[i])
+        if Base > 0:
+            Graph.append(Base - 2)
+            Graph.append(Base - 1)
+        else:
+            Graph.append(Base*-1 - 1)
+            Graph.append(Base*-1 - 2)
+    return Graph
+
+# print('ChromosomeToCycle_IntListInput([1, -2, -3]):', ChromosomeToCycle_IntListInput([1, -2, -3]))
+
+def ColoredEdges(P):
+    P = P[1:-1].split(')(')
+    ColoredEdgeList = []
+    for i in range(len(P)):
+        P[i] = [int(x) for x in P[i].split(' ')]
+    # Chromosome1 = ChromosomeToCycle_IntListInput(P[0])
+    # print('P in colored edges',P)
+    for Chromosome in P:
+        # print(Chromosome)
+        Cycle = ChromosomeToCycle_IntListInput(Chromosome)
+        # print(Chromosome)
+        for i in range(len(Chromosome)-1):
+            ColoredEdgeList.append([Cycle[i*2+1], Cycle[i*2+2]])
+        ColoredEdgeList.append([Cycle[-1], Cycle[0]])
+    # print('ColoredEdgeList', ColoredEdgeList)
+    return ColoredEdgeList
+
+# print(ColoredEdges('(+1 -2 -4 +3)'))
+
+def ColoredEdges_ZerobasedListInput(P):
+    ## Doesn't work ##
+    ColoredEdgeList = []
+    for Chromosome in P:
+        # print(Chromosome)
+        Cycle = ChromosomeToCycle_IntListInput(Chromosome)
+        # print('Cycle:',Cycle)
+        for i in range(len(Chromosome)-1):
+            ColoredEdgeList.append([Cycle[i*2+1], Cycle[i*2+2]])
+        ColoredEdgeList.append([Cycle[-1], Cycle[0]])
+    return ColoredEdgeList
+
+# print(ColoredEdges_ZerobasedListInput([[0,-1,-3, 2]]))
+
+def ColoredEdges_PrettyOutput(P):
+    ## Converts numbers to a 1 based index and formats it to the required output
+    NormalOutput = ColoredEdges(P)
+    for i in range(len(NormalOutput)):
+        for j in range(2):
+            NormalOutput[i][j] = NormalOutput[i][j]+1
+    FinalOutput = []
+    for NormEdge in NormalOutput:
+        FinalOutput.append('({}, {})'.format(NormEdge[0], NormEdge[1]))
+    return ', '.join(FinalOutput)
+
+# print(ColoredEdges_PrettyOutput('(+1 -2 -3)(+4 +5 -6)'))
+
+def GraphToGenome(GenomeGraph):
+    ## Initalize variables and clean the input
+    Cycles = []
+    GenomeGraph = GenomeGraph.split("), (")
+    GenomeGraph = [x.strip('()') for x in GenomeGraph]
+    GenomeGraph = [list(map(lambda x: int(x)-1, lst.split(', '))) for lst in GenomeGraph]
+    # print(GenomeGraph)
+
+    ## Create cycles (draw the chromosome outline) from the colored edge input
+    Cycle = ['placeholder']
+    for i in range(len(GenomeGraph)):
+        if GenomeGraph[i][0] > GenomeGraph[i][1]:
+            Cycle.append(GenomeGraph[i][0])
+            Cycle[0] = GenomeGraph[i][1]
+            Cycles.append(Cycle)
+            Cycle = ['placeholder']
+        else:
+            Cycle.append(GenomeGraph[i][0])
+            Cycle.append(GenomeGraph[i][1])
+
+    ## turn the cycles into genomes
+    Chromosomes = [CycleToChromosome_ZeroBasedIntInput(x) for x in Cycles]
+
+    return ''.join(Chromosomes)
+
+def GraphToGenome_InputIntList(GenomeGraph):
+    ## Updated the cycle decision algorithm to break if adjacent nodes are not within +/- 1 of eachother
+
+    ## Initalize variables and clean the input
+    Cycles = []
+
+    ## Create cycles (draw the chromosome outline) from the colored edge input
+    Cycle = [GenomeGraph[0][0], GenomeGraph[0][1]]
+    RootIndex = 0
+    for i in range(1,len(GenomeGraph)):
+        if abs(GenomeGraph[i-1][1] - GenomeGraph[i][0]) == 1:
+            # print(True)
+            Cycle += GenomeGraph[i]
+        else:
+            # print('Comparison between:', GenomeGraph[RootIndex][0], GenomeGraph[i - 1][1])
+            if abs(GenomeGraph[RootIndex][0] - GenomeGraph[i-1][1]) == 1:
+                Cycles.append(Cycle)
+                Cycle = [GenomeGraph[i][0], GenomeGraph[i][1]]
+                RootIndex = i
+            else:
+                print("I have failed you - diff in edges greater than 1 - GraphToGenome_InputIntList")
+    Cycles.append(Cycle)
+    # print(Cycle)
+    # print('Cycles',Cycles)
+    for i in range(len(Cycles)):
+        # print(Cycles[i][0])
+        Cycles[i].insert(0, Cycles[i].pop())
+    # print("Cycles shifted:", Cycles)
+
+    ## turn the cycles into genomes
+    Chromosomes = [CycleToChromosome_ZeroBasedIntInput(x) for x in Cycles]
+    return ''.join(Chromosomes)
+
+## From first cycle
+# print(GraphToGenome_InputIntList([[1, 2], [3, 5], [4, 6], [7, 0]]))
+## From second cyle
+# print(GraphToGenome_InputIntList([[1, 2], [3, 4], [5, 6], [7, 0]]))
+## From thrid cycle
+# print(GraphToGenome_InputIntList([[1, 2], [3, 7], [5, 6], [4, 0]]))
+
+def GraphToGenome_InputIntList_test(GenomeGraph):
+    ## Updated the cycle decision algorithm to break if adjacent nodes are not within +/- 1 of eachother
+
+    ## Initalize variables and clean the input
+    Cycles = []
+    # GenomeGraph = GenomeGraph.split("), (")
+    # GenomeGraph = [x.strip('()') for x in GenomeGraph]
+    # GenomeGraph = [list(map(lambda x: int(x)-1, lst.split(', '))) for lst in GenomeGraph]
+    # print('GenomeGraph:',GenomeGraph)
+
+    ## Create cycles (draw the chromosome outline) from the colored edge input
+    Cycle = [GenomeGraph[0][0], GenomeGraph[0][1]]
+    RootIndex = 0
+    for i in range(1,len(GenomeGraph)):
+        if abs(GenomeGraph[i-1][1] - GenomeGraph[i][0]) == 1:
+            # print(True)
+            Cycle += GenomeGraph[i]
+        else:
+            # print('Comparison between:', GenomeGraph[RootIndex][0], GenomeGraph[i - 1][1])
+            if abs(GenomeGraph[RootIndex][0] - GenomeGraph[i-1][1]) == 1:
+                Cycles.append(Cycle)
+                Cycle = [GenomeGraph[i][0], GenomeGraph[i][1]]
+                RootIndex = i
+            else:
+                print("I have failed you - diff in edges greater than 1 - GraphToGenome_InputIntList")
+    Cycles.append(Cycle)
+    for i in range(len(Cycles)):
+        Cycles[i].insert(0, Cycles[i].pop())
+    print("Cycles shifted:", Cycles)
+
+    ## turn the cycles into genomes
+    Chromosomes = [CycleToChromosome_ZeroBasedIntInput(x) for x in Cycles]
+    return ''.join(Chromosomes)
+
+# print(GraphToGenome_InputIntList_test([[1, 2], [3, 5], [4, 6], [7, 0]]))
+
+def Two_BreakDistProb(P, Q):
+    ## Initialize variables
+    P, Q, visitedNodes, Cycles = ColoredEdges(P), ColoredEdges(Q), set(), []
+    CombinedEdges, SpiderWeb = P + Q, {}
+    LengthEdges = len(CombinedEdges)
+    Nodes = range(LengthEdges)
+    # visitedNodes.add(11)
+
+    ## Create the spiderweb (Directed forward and back to simulate undirected)
+    for i in range(LengthEdges):
+        if CombinedEdges[i][0] not in SpiderWeb:
+            SpiderWeb[CombinedEdges[i][0]] = [CombinedEdges[i][1]]
+        else:
+            SpiderWeb[CombinedEdges[i][0]].append(CombinedEdges[i][1])
+    for i in range(LengthEdges):
+        if CombinedEdges[i][1] not in SpiderWeb:
+            SpiderWeb[CombinedEdges[i][1]] = [CombinedEdges[i][0]]
+        else:
+            SpiderWeb[CombinedEdges[i][1]].append(CombinedEdges[i][0])
+
+    ## Main loop (Find the cycles in the spiderweb)
+    for i in range(LengthEdges):
+        if i not in visitedNodes:
+            Behind = 'NA'
+            Node = i
+            Cycle = []
+            while True:
+                if Node in visitedNodes:
+                    # print("CYCLE DISCOVERED")
+                    break
+                Head = SpiderWeb[Node][0] if SpiderWeb[Node][0] != Behind else SpiderWeb[Node][1]
+                # print(Behind, Node, Head)
+                visitedNodes.add(Node)
+                Cycle.append(Node)
+                Behind, Node = Node, Head
+            Cycles.append(Cycle)
+    return LengthEdges//2 - len(Cycles), Cycles
+
+def Two_BreakDistProb_ZeroBasedIntListInp(CombinedEdges):
+    ## Initialize variables
+    visitedNodes, Cycles = set(), []
+    SpiderWeb = {}
+    LengthEdges = len(CombinedEdges)
+    Nodes = range(LengthEdges)
+    # visitedNodes.add(11)
+
+    ## Create the spiderweb (Directed forward and back to simulate undirected)
+    for i in range(LengthEdges):
+        if CombinedEdges[i][0] not in SpiderWeb:
+            SpiderWeb[CombinedEdges[i][0]] = [CombinedEdges[i][1]]
+        else:
+            SpiderWeb[CombinedEdges[i][0]].append(CombinedEdges[i][1])
+    for i in range(LengthEdges):
+        if CombinedEdges[i][1] not in SpiderWeb:
+            SpiderWeb[CombinedEdges[i][1]] = [CombinedEdges[i][0]]
+        else:
+            SpiderWeb[CombinedEdges[i][1]].append(CombinedEdges[i][0])
+
+    ## Main loop (Find the cycles in the spiderweb)
+    for i in range(LengthEdges):
+        if i not in visitedNodes:
+            Behind = 'NA'
+            Node = i
+            Cycle = []
+            while True:
+                if Node in visitedNodes:
+                    break
+                Head = SpiderWeb[Node][0] if SpiderWeb[Node][0] != Behind else SpiderWeb[Node][1]
+                visitedNodes.add(Node)
+                Cycle.append(Node)
+                Behind, Node = Node, Head
+            if Cycle[-1] == Cycle[0] - 1 or Cycle[-1] == Cycle[0] + 1:
+                Cycle.insert(0, Cycle.pop(-1))
+            Cycles.append(Cycle)
+    return Cycles
+
+# print(Two_BreakDistProb('(+1 -3 -6 -5)(+2 -4)', '(+1 +2 +3 +4 +5 +6)'))
+
+def Two_BreakOnGenomeGraph(GenomeGraph, Nodes):
+    GenomeGraph = GenomeGraph.split("), (")
+    GenomeGraph = [x.strip('()') for x in GenomeGraph]
+    GenomeGraph = [list(map(lambda x: int(x)-1, lst.split(', '))) for lst in GenomeGraph]
+    Nodes = [int(x)-1 for x in Nodes.split(', ')]
+
+    Coordinate1 = 'NA'
+    for i in range(len(GenomeGraph)):
+        if GenomeGraph[i][0] == Nodes[0] or GenomeGraph[i][1] == Nodes[0]:
+            Coordinate1 = i
+    # print(GenomeGraph, Nodes)
+
+    Coordinate2 = 'NA'
+    for i in range(len(GenomeGraph)):
+        if GenomeGraph[i][0] == Nodes[2] or GenomeGraph[i][1] == Nodes[2]:
+            Coordinate2 = i
+
+    GenomeGraph[Coordinate1], GenomeGraph[Coordinate2] = [Nodes[0], Nodes[2]], [Nodes[1], Nodes[3]]
+    return GenomeGraph
+
+# print(Two_BreakOnGenomeGraph('(2, 4), (3, 8), (7, 5), (6, 1)', '1, 6, 3, 8'))
+
+def Two_BreakOnGenomeGraph_EdgesAsZeroBasedLists(GenomeGraph, Nodes):
+
+    Coordinate1 = 'NA'
+    for i in range(len(GenomeGraph)):
+        if GenomeGraph[i][0] == Nodes[0] or GenomeGraph[i][1] == Nodes[0]:
+            Coordinate1 = i
+    # print(GenomeGraph, Nodes)
+
+    Coordinate2 = 'NA'
+    for i in range(len(GenomeGraph)):
+        if GenomeGraph[i][0] == Nodes[2] or GenomeGraph[i][1] == Nodes[2]:
+            Coordinate2 = i
+
+    GenomeGraph[Coordinate1], GenomeGraph[Coordinate2] = [Nodes[0], Nodes[2]], [Nodes[1], Nodes[3]]
+    return GenomeGraph
+
+def Two_BreakOnGenomeGraph_EdgesAsZeroBasedLists_Troubleshoot(GenomeGraph, Nodes):
+
+    Coordinate1 = 'NA'
+    for i in range(len(GenomeGraph)):
+        if (GenomeGraph[i][0] == Nodes[0] and GenomeGraph[i][1] == Nodes[1]) or (GenomeGraph[i][0] == Nodes[1] and GenomeGraph[i][1] == Nodes[0]):
+            Coordinate1 = i
+
+    Coordinate2 = 'NA'
+    for i in range(len(GenomeGraph)):
+        if (GenomeGraph[i][0] == Nodes[2] and GenomeGraph[i][1] == Nodes[3]) or (GenomeGraph[i][0] == Nodes[3] and GenomeGraph[i][1] == Nodes[2]):
+            Coordinate2 = i
+    GenomeGraph[Coordinate1], GenomeGraph[Coordinate2] = [Nodes[0], Nodes[2]], [Nodes[1], Nodes[3]]
+    return GenomeGraph
+
+# print(Two_BreakOnGenomeGraph_EdgesAsZeroBasedLists_Troubleshoot([[0,1], [1,2], [2,3], [3,0]], [0,1,3,2]))
+
+def Two_BreakOnGenomeGraph_PrettyOutput(GenomeGraph, Nodes):
+    RawGraph = Two_BreakOnGenomeGraph(GenomeGraph, Nodes)
+    FinalGraph = []
+    for edge in RawGraph:
+        FinalGraph.append('({})'.format(', '.join([str(x+1) for x in edge])))
+    # print(FinalGraph)
+    return ', '.join(FinalGraph)
+
+# print(Two_BreakOnGenomeGraph_PrettyOutput('(2, 4), (3, 8), (7, 5), (6, 1)', '1, 6, 3, 8'))
+
+def Two_BreakOnGenome(P, Nodes):
+    ## Initialize Nodes
+    Nodes = [int(x)-1 for x in Nodes.split(', ')]
+    # print("Nodes:", Nodes)
+
+    ##Generate and combine the black and colored edges
+    ColoredArray = ColoredEdges(P)
+    BlackArray = ChromosomeToCycle_IntBaseZero(P)
+    BlackArray2 = []
+    for i in range(len(BlackArray)//2):
+        BlackArray2.append([BlackArray[i*2], BlackArray[i*2+1]])
+    GenomeGraph = BlackArray2 + ColoredArray
+
+    ### Step 2 break accordingly
+    NewGenomeGraph = Two_BreakOnGenomeGraph_EdgesAsZeroBasedLists_Troubleshoot(GenomeGraph, Nodes)
+
+    ## Step 3 Find the cycles
+    NewGenome = Two_BreakDistProb_ZeroBasedIntListInp(NewGenomeGraph)
+
+    ## Step 4 turn cycles into genomes
+    Chcomosomes = [CycleToChromosome_ZeroBasedIntInput(x) for x in NewGenome]
+
+    return "".join(Chcomosomes)
+
+def Two_BreakOnGenome_NodesZeroBasedInt(P, Nodes):
+    ##Generate and combine the black and colored edges
+    ColoredArray = ColoredEdges(P)
+    BlackArray = ChromosomeToCycle_IntBaseZero(P)
+
+    BlackArray2 = []
+    for i in range(len(BlackArray)//2):
+        BlackArray2.append([BlackArray[i*2], BlackArray[i*2+1]])
+    GenomeGraph = BlackArray2 + ColoredArray
+
+    ### Step 2 break accordingly
+    NewGenomeGraph = Two_BreakOnGenomeGraph_EdgesAsZeroBasedLists_Troubleshoot(GenomeGraph, Nodes)
+
+    ## Step 3 Find the cycles
+    NewGenome = Two_BreakDistProb_ZeroBasedIntListInp(NewGenomeGraph)
+
+    ## Step 4 turn cycles into genomes
+    Chcomosomes = [CycleToChromosome_ZeroBasedIntInput(x) for x in NewGenome]
+
+    return "".join(Chcomosomes)
+
+def ShortestRearrangementScenario(P, Q):
+    ## Initialize
+    ModificationLog = [P]
+    RedEdges, BlueEdges = ColoredEdges(P), ColoredEdges(Q)
+    SyntenyBlock_Num = len(RedEdges)
+
+    while True:
+    # for t in range(3):
+        BreakPointGraph = RedEdges + BlueEdges
+
+        CyclesFromBPGraph = Two_BreakDistProb_ZeroBasedIntListInp(BreakPointGraph)
+        RequiredBreaks = SyntenyBlock_Num - len(CyclesFromBPGraph)
+        if RequiredBreaks == 0:
+            # print('COMPLETE - KILL THE WHILE LOOP')
+            break
+
+        ## Find a breakable cycle set
+        for Cycle in CyclesFromBPGraph:
+            if len(Cycle) > 2:
+                BreakableCycle = Cycle
+                BreakableCycleSet = set(Cycle)
+
+        ## Locate the red and blue edges within the breakablecycle:
+        BreakableCycleRedEdges, BreakableRedEdgeIndeces = [], []
+        for j in range(SyntenyBlock_Num):
+            if RedEdges[j][0] in BreakableCycleSet and RedEdges[j][1] in BreakableCycleSet:
+                BreakableCycleRedEdges.append(RedEdges[j])
+                BreakableRedEdgeIndeces.append(j)
+
+        ## Swap the edges for [1,2], [3,4] to become [1,3], [2,4] on rededges
+        NewEdge1, NewEdge2 = [BreakableCycleRedEdges[0][0], BreakableCycleRedEdges[1][0]], [
+            BreakableCycleRedEdges[0][1], BreakableCycleRedEdges[1][1]]
+        RedEdgesTest = RedEdges[:]
+        RedEdgesTest[BreakableRedEdgeIndeces[0]], RedEdgesTest[BreakableRedEdgeIndeces[1]] = NewEdge1, NewEdge2
+
+        ## Test the new graph
+        BreakPointGraphTest = RedEdgesTest + BlueEdges
+        CyclesFromBP_Test_Graph = Two_BreakDistProb_ZeroBasedIntListInp(BreakPointGraphTest)
+        NewRequiredBreaks = SyntenyBlock_Num - len(CyclesFromBP_Test_Graph)
+        if NewRequiredBreaks < RequiredBreaks:
+            RedEdges = RedEdgesTest[:]
+
+            # Run 2-break prob on P here
+            Nodes = BreakableCycleRedEdges[0] + BreakableCycleRedEdges[1]
+            P = Two_BreakOnGenome_NodesZeroBasedInt(P, Nodes)
+            ModificationLog.append(P)
+
+        else:
+            ## Swap the edges for [1,2], [3,4] to become [1,3], [2,4] on rededges
+            NewEdge1, NewEdge2 = [BreakableCycleRedEdges[0][0], BreakableCycleRedEdges[1][1]], [
+                BreakableCycleRedEdges[0][1], BreakableCycleRedEdges[1][0]]
+            RedEdgesTest = RedEdges[:]
+            RedEdgesTest[BreakableRedEdgeIndeces[0]], RedEdgesTest[BreakableRedEdgeIndeces[1]] = NewEdge1, NewEdge2
+
+            ## Test the new graph
+            BreakPointGraphTest = RedEdgesTest + BlueEdges
+            CyclesFromBP_Test_Graph = Two_BreakDistProb_ZeroBasedIntListInp(BreakPointGraphTest)
+            NewRequiredBreaks = SyntenyBlock_Num - len(CyclesFromBP_Test_Graph)
+            if NewRequiredBreaks < RequiredBreaks:
+                RedEdges = RedEdgesTest[:]
+
+                # Run 2-break prob on P here
+                Nodes = BreakableCycleRedEdges[0] + BreakableCycleRedEdges[1][::-1]
+                P = Two_BreakOnGenome_NodesZeroBasedInt(P, Nodes)
+                ModificationLog.append(P)
+    print('Length of Modification log: ', len(ModificationLog))
+    return '\n'.join(ModificationLog)
+
+print(ShortestRearrangementScenario(input(), input()))
