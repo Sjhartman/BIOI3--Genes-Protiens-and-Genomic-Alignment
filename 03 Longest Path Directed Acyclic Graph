@@ -1,5 +1,5 @@
-# File input with upstream node of interest in line 1 and downstream node of interest in line 2
-# See "Longest Path Test case" file for sample inputs and outputs
+## File input with upstream node of interest in line 1 and downstream node of interest in line 2
+## See "Longest Path Test case" file for sample inputs and outputs
 
 def DAGLongestPath_2(file):
     #Interpret file
